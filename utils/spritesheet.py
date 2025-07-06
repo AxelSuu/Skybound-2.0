@@ -20,7 +20,7 @@ Supported Features:
 - Individual sprite extraction from atlases
 - Named sprite lookup for easy access
 
-Author: [Your Name]
+Author: Axel Suu
 Date: July 2025
 """
 
