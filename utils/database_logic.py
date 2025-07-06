@@ -22,7 +22,7 @@ All functions follow a consistent naming pattern:
 - Get[DataType](): Retrieve data from file
 - Set[DataType](value): Store data to file
 
-Author: [Your Name]
+Author: Axel Suu
 Date: July 2025
 """
 
