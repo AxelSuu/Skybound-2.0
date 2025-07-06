@@ -16,7 +16,7 @@ The settings screen includes:
 The settings system provides immediate feedback for changes and automatically
 saves preferences for future game sessions.
 
-Author: [Your Name]
+Author: Axel Suu
 Date: July 2025
 """
 
