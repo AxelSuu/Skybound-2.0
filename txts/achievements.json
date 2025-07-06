@@ -1,0 +1,74 @@
+[
+  {
+    "id": "first_level",
+    "unlocked": true,
+    "progress": 1,
+    "unlock_date": "2025-07-05 18:29:04"
+  },
+  {
+    "id": "level_5",
+    "unlocked": true,
+    "progress": 5,
+    "unlock_date": "2025-07-06 06:21:40"
+  },
+  {
+    "id": "level_10",
+    "unlocked": true,
+    "progress": 10,
+    "unlock_date": "2025-07-06 06:40:43"
+  },
+  {
+    "id": "level_25",
+    "unlocked": true,
+    "progress": 25,
+    "unlock_date": "2025-07-06 06:41:30"
+  },
+  {
+    "id": "collect_100_coins",
+    "unlocked": false,
+    "progress": 0,
+    "unlock_date": null
+  },
+  {
+    "id": "collect_500_coins",
+    "unlocked": false,
+    "progress": 0,
+    "unlock_date": null
+  },
+  {
+    "id": "no_damage_level",
+    "unlocked": true,
+    "progress": 1,
+    "unlock_date": "2025-07-05 18:29:04"
+  },
+  {
+    "id": "use_10_powerups",
+    "unlocked": false,
+    "progress": 0,
+    "unlock_date": null
+  },
+  {
+    "id": "defeat_10_enemies",
+    "unlocked": false,
+    "progress": 0,
+    "unlock_date": null
+  },
+  {
+    "id": "speed_run",
+    "unlocked": true,
+    "progress": 1,
+    "unlock_date": "2025-07-05 18:29:04"
+  },
+  {
+    "id": "jump_master",
+    "unlocked": false,
+    "progress": 0,
+    "unlock_date": null
+  },
+  {
+    "id": "hat_collector",
+    "unlocked": false,
+    "progress": 0,
+    "unlock_date": null
+  }
+]
