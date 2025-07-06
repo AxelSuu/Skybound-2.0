@@ -18,7 +18,7 @@ State management is handled through a simple text file database system located
 in the utils/database_logic.py module. Player progress, settings, and statistics
 are persisted between game sessions.
 
-Author: [Your Name]
+Author: Axel Suu
 Date: July 2025
 """
 
