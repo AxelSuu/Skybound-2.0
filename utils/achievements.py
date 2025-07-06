@@ -22,7 +22,7 @@ Achievement Categories:
 The system is designed to encourage player engagement through meaningful
 goals and recognition of player skill and dedication.
 
-Author: [Your Name]
+Author: Axel Suu
 Date: July 2025
 """
 
