@@ -14,7 +14,7 @@ This module contains the main game loop class that handles:
 The Loop class is the core of the gameplay experience, managing all
 real-time interactions and updates during active gameplay.
 
-Author: [Your Name]
+Author: Axel Suu
 Date: July 2025
 """
 
