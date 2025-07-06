@@ -14,7 +14,7 @@ The level system uses a hybrid approach:
 - Level 2+ are procedurally generated with increasing complexity
 - All levels ensure playability through reachability algorithms
 
-Author: [Your Name]
+Author: Axel Suu
 Date: July 2025
 """
 
