@@ -23,7 +23,7 @@ The system generates sounds mathematically, creating consistent audio
 effects while keeping file sizes small and providing flexibility
 for dynamic audio generation.
 
-Author: [Your Name]
+Author: Axel Suu
 Date: July 2025
 """
 
