@@ -13,7 +13,7 @@ The Player class is the core interactive element of the game, supporting:
 - Customizable character appearances (hats)
 - Persistent statistics across game sessions
 
-Author: [Your Name]
+Author: Axel Suu
 Date: July 2025
 """
 
