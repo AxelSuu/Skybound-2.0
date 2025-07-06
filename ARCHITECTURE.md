@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# Skybound 2.0 - 2D Platformer Game
 """
 Skybound Game Architecture Documentation
 
