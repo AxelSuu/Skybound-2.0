@@ -15,7 +15,7 @@ Features:
 - Strategic placement on the highest or most challenging platforms
 - Clear visual design to stand out in the level environment
 
-Author: [Your Name]
+Author: Axel Suu
 Date: July 2025
 """
 
