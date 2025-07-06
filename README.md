@@ -14,14 +14,14 @@ A feature-rich 2D platformer game built with Python and Pygame, featuring proced
   <tr>
     <td><img src="imgs/pic4.png"/></td>
     <td><img src="imgs/pic9.png"/></td>
-    <td><img src="imgs/pic6.png"/></td>
+    <td><img src="imgs/pic10.png"/></td>
   </tr>
 </table>
 
 <table>
   <tr>
     <td><img src="imgs/pic8.png"/></td>
-    <td><img src="imgs/pic10.png"/></td>
+    <td><img src="imgs/pic6.png"/></td>
   </tr>
 </table>
 
