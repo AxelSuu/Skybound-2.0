@@ -23,7 +23,7 @@ Enemy Types:
 The system uses inheritance and composition to create diverse enemy
 behaviors while maintaining code reusability and performance.
 
-Author: [Your Name]
+Author: Axel Suu
 Date: July 2025
 """
 
