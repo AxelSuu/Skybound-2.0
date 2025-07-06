@@ -15,7 +15,7 @@ Effect Types:
 The effects system is designed to be performant and visually appealing,
 providing immediate feedback to player actions and game events.
 
-Author: [Your Name]
+Author: Axel Suu
 Date: July 2025
 """
 
