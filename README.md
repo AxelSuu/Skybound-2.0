@@ -7,22 +7,20 @@ A feature-rich 2D platformer game built with Python and Pygame, featuring proced
     <td><img src="imgs/pic1.png"/></td>
     <td><img src="imgs/pic2.png"/></td>
     <td><img src="imgs/pic3.png"/></td>
+  </tr>
+</table>
+
+<table>
+  <tr>
     <td><img src="imgs/pic4.png"/></td>
-  </tr>
-</table>
-
-<table>
-  <tr>
-    <td><img src="imgs/pic5.png"/></td>
-    <td><img src="imgs/pic6.png"/></td>
-    <td><img src="imgs/pic7.png"/></td>
-    <td><img src="imgs/pic8.png"/></td>
-  </tr>
-</table>
-
-<table>
-  <tr>
     <td><img src="imgs/pic9.png"/></td>
+    <td><img src="imgs/pic6.png"/></td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td><img src="imgs/pic8.png"/></td>
     <td><img src="imgs/pic10.png"/></td>
   </tr>
 </table>
