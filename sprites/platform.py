@@ -15,7 +15,7 @@ The platform system supports dynamic sizing, allowing the level generation
 system to create platforms of various widths and heights to create interesting
 and challenging level layouts.
 
-Author: [Your Name]
+Author: Axel Suu
 Date: July 2025
 """
 
