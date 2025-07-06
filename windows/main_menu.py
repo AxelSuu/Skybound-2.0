@@ -18,7 +18,7 @@ The menu uses a clean, modern design with smooth transitions and responsive
 button interactions. It serves as the central hub for all game functionality
 and provides easy access to all game features.
 
-Author: [Your Name]
+Author: Axel Suu
 Date: July 2025
 """
 
