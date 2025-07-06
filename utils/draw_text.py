@@ -14,7 +14,7 @@ Features:
 - Consistent color scheme (black text on light backgrounds)
 - Optimized rendering for game UI elements
 
-Author: [Your Name]
+Author: Axel Suu
 Date: July 2025
 """
 
