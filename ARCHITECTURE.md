@@ -5,7 +5,7 @@ Skybound Game Architecture Documentation
 This document provides a comprehensive overview of the Skybound game architecture,
 explaining the design patterns, system interactions, and code organization.
 
-Author: [Your Name]
+Author: Axel Suu
 Date: July 2025
 """
 
