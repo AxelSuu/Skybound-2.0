@@ -20,7 +20,7 @@ The power-up system includes:
 - Visual feedback through particle effects
 - Sound effects for collection feedback
 
-Author: [Your Name]
+Author: Axel Suu
 Date: July 2025
 """
 
