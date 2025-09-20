@@ -1,6 +1,6 @@
 # Skybound 2.0 - 2D Platformer Game
 
-A feature-rich 2D platformer game built with Python and Pygame, featuring procedural level generation, power-ups, achievements, and comprehensive visual effects.
+A revised 2D platformer game built with Python and Pygame, featuring procedural level generation, power-ups, achievements, and comprehensive visual effects.
 
 <table>
   <tr>
@@ -25,9 +25,9 @@ A feature-rich 2D platformer game built with Python and Pygame, featuring proced
   </tr>
 </table>
 
-## Enhanced Features
+## Featuring
 
-### Core Gameplay
+### Gameplay
 - **Physics-based movement** with acceleration and friction
 - **Procedural level generation** with increasing difficulty
 - **Multiple enemy types** with unique AI behaviors  
@@ -52,20 +52,6 @@ A feature-rich 2D platformer game built with Python and Pygame, featuring proced
 - **Persistent player statistics** across sessions
 - **Character customization** with unlockable hats
 - **High score tracking** and level progression
-
-## Original Features
-- **State Management**: Multiple game screens (Menu, Start, Game, Pause, Game Over)
-- **Fluid Animations**: Character animations using spritesheets with JSON metadata
-- **Dynamic Audio**: Different background music for each game state
-- **Enemy movement logic**: Several NPC monster with different behaviors
-- **Procedural Generation**: Infinite, random level creation
-- **Shop System**: In-game store with unlockable characters
-- **Persistent Storage**: Save high scores and character selections
-- **Cross-Platform**: Works on Windows, Mac, and Linux
-- **A simple database** for storing highscore, player selection, etc with homemade API functionality.
-- **46 MB executable** with pyinstaller instructions
-- **Documented** according to PEP-8 (ish) and well structured.
-
 
 ## Controls
 - **Space/Up Arrow**: Jump
@@ -166,3 +152,4 @@ Skybound
 ## Contributing
 
 Feel free to submit issues or pull requests for improvements or bug fixes.
+
