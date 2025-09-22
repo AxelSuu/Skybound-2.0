@@ -37,7 +37,6 @@ A revised 2D platformer game built with Python and Pygame, featuring procedural 
 
 ### Visual Effects
 - **Particle systems** for explosions, trails, and ambient effects
-- **Screen shake** for impact feedback
 - **Floating text** for damage numbers and notifications
 - **Power-up indicators** and visual feedback
 - **Smooth animations** for all characters and objects
@@ -148,8 +147,4 @@ Skybound
 ## I took the background images from here
 [Background images](https://craftpix.net/freebies/free-sky-with-clouds-background-pixel-art-set/)
 
-
-## Contributing
-
-Feel free to submit issues or pull requests for improvements or bug fixes.
 
