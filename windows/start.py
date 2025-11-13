@@ -31,13 +31,13 @@ class Start:
         if GetHighScore() == 0:
             self.screen.fill(self.LIGHTBLUE)
             text = string.ascii_letters + " " + "!" + "/"
-            target = "Hello /Axel"
+            target = "Hello"
             result = ""
             for letter in target:
                 while True:
                     I = random.choice(text)
                     self.screen.fill(self.LIGHTBLUE)
-                    time.sleep(0.01)
+                    time.sleep(0.001)
                     draw_text(
                         self.screen, result + I, 50, self.WIDTH / 2, self.HEIGHT / 4
                     )
