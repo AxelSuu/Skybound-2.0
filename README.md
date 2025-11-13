@@ -1,6 +1,6 @@
 Skybound 2.0
 
-A 2D platformer built with Python and Pygam with random procedural level generation, enemys, multiple screens, power-ups, achievements, and visual effects. Straight up run main.py or run pyinstaller skybound.spec for the included build system
+A 2D platformer built with Python and Pygame with random procedural level generation, enemys, multiple screens, power-ups, achievements, and visual effects. Straight up run main.py or run pyinstaller skybound.spec for the included build system
 
 <table>
   <tr>
@@ -39,22 +39,23 @@ Setup Instructions
    pip install -r requirements.txt
    ```
 
-3. Build the application
-   ```
-   pyinstaller skybound.spec
-   ```
-4. Or run in code
+3. Run in code
    ```
    python3 main.py
    ```
 
+3. Alternative, Build the exe file
+   ```
+   pyinstaller skybound.spec
+   ```
+
 Gameplay
-- Physics-based movement with acceleration and friction
 - Procedural level generation with increasing difficulty
 - Multiple enemy types with unique AI behaviors  
 - Power up system with temporary and permanent upgrades
 - Health and damage system with invincibility frames
-- Coin collection and persistent statistics
+- Coin collection and saving data in files
+- Multiple windows, shop, character selection, settings
 
 Visual Effects
 - Particle systems for explosions, trails, and ambient effects

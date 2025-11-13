@@ -219,7 +219,16 @@ class PowerUpManager:
             
         # Choose a random platform
         platform = random.choice(platforms.sprites())
-        x = random.randint(platform.rect.left + 20, platform.rect.right - 20)
+        
+        # Calculate x position, handling narrow platforms
+        min_x = platform.rect.left + 20
+        max_x = platform.rect.right - 20
+        if min_x >= max_x:
+            # Platform too narrow, use center instead
+            x = platform.rect.centerx
+        else:
+            x = random.randint(min_x, max_x)
+        
         y = platform.rect.top - 25
         
         # Choose random power-up type

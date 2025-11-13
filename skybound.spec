@@ -2,7 +2,7 @@
 
 block_cipher = None
 
-# Define all your game assets
+# Define all game assets
 added_files = [
     ('imgs/*.png', 'imgs'),
     ('imgs/*.json', 'imgs'),

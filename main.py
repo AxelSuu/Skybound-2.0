@@ -9,7 +9,7 @@ The game uses a state-based architecture with the following states:
 - MAIN_MENU: Main menu screen with options to start, view achievements, settings, etc.
 - START_SCREEN: Character selection screen
 - GAME: Active gameplay loop
-- PAUSED: Game paused state
+ - PAUSED: Game paused state
 - GAME_OVER: Game over screen after completing a level or dying
 - NEW_HIGHSCORE: Special screen shown when a new high score is achieved
 - EXIT: Terminates the game
