@@ -1,6 +1,7 @@
 Skybound 2.0
 
-A 2D platformer built with Python and Pygame with random procedural level generation, enemys, multiple screens, power-ups, achievements, and visual effects. Straight up run main.py or run pyinstaller skybound.spec for the included build system
+A 2D platformer built with Python and Pygame with procedural level generation, multiple enemy characters, multiple states, power-ups and achievements.
+Straight up run main.py or run pyinstaller skybound.spec for the included build system
 
 <table>
   <tr>
@@ -49,39 +50,9 @@ Setup Instructions
    pyinstaller skybound.spec
    ```
 
-Gameplay
-- Procedural level generation with increasing difficulty
-- Multiple enemy types with unique AI behaviors  
-- Power up system with temporary and permanent upgrades
-- Health and damage system with invincibility frames
-- Coin collection and saving data in files
-- Multiple windows, shop, character selection, settings
-
-Visual Effects
-- Particle systems for explosions, trails, and ambient effects
-- Floating text for damage numbers and notifications
-- Power-up indicators and visual feedback
-- Smooth animations for all characters and objects
-
-Audio
-- Dynamic background music that changes with game state
-- Procedural sound effects for actions and collisions
-
-Progression Systems
-- Achievement system with 15+ unique achievements
-- Persistent player statistics across sessions
-- Character customization with unlockable hats
-- High score tracking and level progression
-
-Controls
-- **Space/Up Arrow**: Jump
-- **Left/Right Arrow**: Move left/right
-
-Functionality to add:
-- Background shaders, web version port
-
 I took the background images from here
 [Background images](https://craftpix.net/freebies/free-sky-with-clouds-background-pixel-art-set/)
+
 
 
 
