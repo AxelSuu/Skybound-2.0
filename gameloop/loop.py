@@ -160,9 +160,14 @@ class Loop():
                 SetGamestate("EXIT")
 
     def update(self):
+        # Effects always animate (incl. shake during a freeze). If a hit-stop
+        # is active, skip the gameplay simulation this frame for impact.
+        self.effects_manager.update()
+        if self.effects_manager.is_hit_stopped():
+            return
+
         self.all_sprites.update()
         self.powerup_manager.update(self.platforms)
-        self.effects_manager.update()
         self.handle_collisions()
         
         # Update mob AI with player position
@@ -247,11 +252,12 @@ class Loop():
             if self.player.take_damage():
                 self.player_took_damage_this_level = True
                 play_damage_sound()
+                self.effects_manager.start_hit_stop(6)  # freeze-frame on the hit
                 self.effects_manager.create_explosion(
                     self.player.pos.x, self.player.pos.y, (255, 0, 0)
                 )
                 self.effects_manager.add_floating_text(
-                    self.player.pos.x, self.player.pos.y - 20, 
+                    self.player.pos.x, self.player.pos.y - 20,
                     "OUCH!", (255, 0, 0)
                 )
                 
@@ -302,6 +308,7 @@ class Loop():
                     if self.player.take_damage():
                         self.player_took_damage_this_level = True
                         play_damage_sound()
+                        self.effects_manager.start_hit_stop(6)  # freeze-frame on the hit
                         self.effects_manager.create_explosion(
                             self.player.pos.x, self.player.pos.y, (255, 100, 0)
                         )

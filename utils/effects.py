@@ -317,9 +317,24 @@ class EffectsManager:
         self.screen_shake = ScreenShake()
         self.floating_text = FloatingTextManager()
         self.power_up_indicators = []
-        
+        self.hit_stop = 0  # Frames of gameplay freeze remaining (juice)
+
+    def start_hit_stop(self, frames):
+        """Freeze the gameplay simulation for a few frames for impact.
+
+        Effects (shake, particles) keep animating during the freeze; the game
+        loop is responsible for skipping its simulation while is_hit_stopped().
+        """
+        self.hit_stop = max(self.hit_stop, frames)
+
+    def is_hit_stopped(self):
+        """True while a hit-stop freeze is in effect."""
+        return self.hit_stop > 0
+
     def update(self):
         """Update all effects"""
+        if self.hit_stop > 0:
+            self.hit_stop -= 1
         self.particle_system.update()
         self.screen_shake.update()
         self.floating_text.update()
