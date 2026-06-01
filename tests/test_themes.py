@@ -1,0 +1,27 @@
+"""Tests for deterministic biome theme rotation."""
+
+from levels.themes import THEMES, LEVELS_PER_THEME, theme_for_level
+
+
+def test_theme_is_stable_within_a_biome_band():
+    # All levels in the first band map to the first theme.
+    for level in range(1, LEVELS_PER_THEME + 1):
+        assert theme_for_level(level) is THEMES[0]
+
+
+def test_theme_advances_each_band():
+    assert theme_for_level(1) is THEMES[0]
+    assert theme_for_level(1 + LEVELS_PER_THEME) is THEMES[1]
+    assert theme_for_level(1 + 2 * LEVELS_PER_THEME) is THEMES[2]
+
+
+def test_theme_rotation_wraps_around():
+    band = LEVELS_PER_THEME * len(THEMES)
+    # One full cycle later returns to the starting theme.
+    assert theme_for_level(1) is theme_for_level(1 + band)
+
+
+def test_low_levels_are_clamped_safely():
+    # Defensive: level 0 / negatives should not crash and map to the first band.
+    assert theme_for_level(0) is THEMES[0]
+    assert theme_for_level(-5) is THEMES[0]

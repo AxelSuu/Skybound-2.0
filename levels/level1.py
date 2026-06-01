@@ -31,6 +31,7 @@ from sprites.mob import Mob
 from sprites.mob_types import create_random_mob
 from sprites.pausebutton import Closebutton
 from constants import MAX_REACH_V, MAX_REACH_H
+from levels.themes import theme_for_level, apply_tint
 
 
 def build_reachable_platforms(num_platforms, current_level, width, height, rng=random):
@@ -166,6 +167,16 @@ class LevelClass:
         
         # Set default background
         self.sky = self.skys[0]
+        self.theme = None
+        self._sky_cache = {}
+
+    def _load_sky(self, filename):
+        """Load (and cache) a themed background image by filename."""
+        if filename not in self._sky_cache:
+            self._sky_cache[filename] = pg.image.load(
+                os.path.join(self.img_folder_path, filename)
+            ).convert_alpha()
+        return self._sky_cache[filename]
 
     def level1(self):
         # Create level 1 (static)
@@ -221,7 +232,9 @@ class LevelClass:
         from utils.database_logic import GetScore
         
         current_level = GetScore()
-        self.sky = random.choice(self.skys)
+        # Pick the biome for this level and bake its tint onto the background.
+        self.theme = theme_for_level(current_level)
+        self.sky = apply_tint(self._load_sky(self.theme["sky"]), self.theme["tint"])
         self.game.all_sprites = pg.sprite.Group()
         self.game.platforms = pg.sprite.Group()
         self.game.goals = pg.sprite.Group()
