@@ -19,7 +19,7 @@ class NewHighscore:
         self.screen = pg.display.set_mode((self.WIDTH, self.HEIGHT))
         self.bg_scroll = 0
         self.background = pg.image.load(
-            os.path.join(self.img_folder_path, "Sky2.png")
+            os.path.join(self.img_folder_path, "sky2.png")
         ).convert()
         self.background2 = pg.transform.flip(self.background, True, False).convert()
         self.show_NH_screen()

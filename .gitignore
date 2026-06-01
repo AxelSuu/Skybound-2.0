@@ -15,3 +15,6 @@ dist/
 
 # Player save data (migrated from txts/ on first run)
 save.json
+
+txts/*
+

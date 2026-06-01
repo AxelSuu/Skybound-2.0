@@ -27,6 +27,7 @@ from utils.sound_effects import *
 from utils.achievements import check_level_achievement, check_coin_achievement, check_no_damage_achievement
 from sprites.powerups import PowerUpManager
 from windows.paus import Pause
+from utils import daily
 
 # Game configuration constants (see constants.py for the shared source of truth)
 from constants import WIDTH, HEIGHT, FPS, TITLE, WHITE
@@ -235,6 +236,8 @@ class Loop():
                     )
             
             SetHighScore(GetScore())
+            if daily.is_active():
+                daily.record_daily_result(level_completed)
             SetScore(GetScore() + 1)
             self.running = False
             play_victory_sound()

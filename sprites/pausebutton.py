@@ -12,7 +12,7 @@ class Closebutton(pg.sprite.Sprite):
             os.path.join(os.path.dirname(__file__), "..", "imgs")
         )
         self.image = pg.image.load(
-            os.path.join(self.img_folder_path, "paus.png")
+            os.path.join(self.img_folder_path, "Paus.png")
         ).convert_alpha()
         self.rect = self.image.get_rect()
         self.rect.x = x
