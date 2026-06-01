@@ -30,6 +30,53 @@ from sprites.goal import Goal
 from sprites.mob import Mob
 from sprites.mob_types import create_random_mob
 from sprites.pausebutton import Closebutton
+from constants import MAX_REACH_V, MAX_REACH_H
+
+
+def build_reachable_platforms(num_platforms, current_level, width, height, rng=random):
+    """Generate a platform layout that is guaranteed climbable.
+
+    Platforms are built upward from the floor, each placed within a single
+    jump (MAX_REACH_V vertically, MAX_REACH_H horizontally) of the one below,
+    so the level is always completable by construction. This replaces the old
+    "scatter randomly, then nudge" approach which could leave gaps larger than
+    the player's ~132px jump height.
+
+    Args:
+        num_platforms: how many platforms to attempt (above the floor).
+        current_level: difficulty driver (bigger gaps / narrower platforms).
+        width, height: screen dimensions.
+        rng: random source (injectable for deterministic tests).
+
+    Returns:
+        list[pygame.Rect] sorted top-to-bottom (index 0 = highest, where the
+        goal goes), excluding the floor platform.
+    """
+    floor_top = height - 40
+    # Difficulty: gaps trend larger and platforms narrower as levels climb,
+    # but always stay within the reachable budget.
+    min_gap = min(70 + current_level * 3, MAX_REACH_V - 10)
+    max_w = max(50, 120 - current_level * 3)
+    min_w = max(36, 80 - current_level * 3)
+
+    plats = []
+    prev_cx = width // 2
+    prev_y = floor_top
+    for _ in range(num_platforms):
+        gap = rng.randint(min_gap, MAX_REACH_V)
+        y = prev_y - gap
+        if y < 60:  # reached the top of the play area
+            break
+        w = rng.randint(min(min_w, max_w), max(min_w, max_w))
+        h = 20
+        # Horizontal offset within reach, kept fully on screen.
+        cx = prev_cx + rng.randint(-MAX_REACH_H, MAX_REACH_H)
+        cx = max(w // 2, min(width - w // 2, cx))
+        plats.append(pg.Rect(cx - w // 2, y, w, h))
+        prev_cx, prev_y = cx, y
+
+    plats.sort(key=lambda r: r.y)  # highest first
+    return plats
 
 
 class LevelClass:
@@ -200,59 +247,18 @@ class LevelClass:
         self.game.all_sprites.add(p1)
         self.game.platforms.add(p1)
 
-        # Enhanced difficulty scaling
+        # Build a reachable platform layout (guaranteed climbable by construction)
         base_platforms = 4
-        extra_platforms = min(current_level // 3, 4)  # Add platforms every 3 levels, max 4 extra
+        extra_platforms = min(current_level // 3, 4)  # +1 every 3 levels, max +4
         num_platforms = base_platforms + extra_platforms
-        
-        # Adjust platform spacing based on difficulty
-        min_spacing = max(120, 180 - (current_level * 5))  # Closer platforms on higher levels
-        max_spacing = min(220, 160 + (current_level * 5))  # But not too close
-        
+
+        platform_rects = build_reachable_platforms(
+            num_platforms, current_level, self.WIDTH, self.HEIGHT
+        )
         platforms = []
-        for plat in range(num_platforms):
-            width = random.randint(max(40, 80 - current_level), min(120, 80 + current_level))
-            height = 20
-            x = random.randint(0, self.WIDTH - width)
-            y = random.randint(40, self.HEIGHT - height - 300)
-            platform = Platform2(x, y, width, height)
+        for r in platform_rects:
+            platform = Platform2(r.x, r.y, r.width, r.height)
             platforms.append(platform)
-
-        # Sort platforms by y-coordinate
-        platforms.sort(key=lambda p: p.rect.y)
-
-        # Adjust y-coordinates to ensure proper spacing
-        for i in range(1, len(platforms)):
-            min_gap = min_spacing
-            max_gap = max_spacing
-            
-            if platforms[i].rect.y - platforms[i - 1].rect.y > max_gap:
-                platforms[i].rect.y = platforms[i - 1].rect.y + max_gap
-            elif platforms[i].rect.y - platforms[i - 1].rect.y < min_gap:
-                platforms[i].rect.y = platforms[i - 1].rect.y + min_gap
-
-        # Adjust x-coordinates to ensure reachability
-        for i in range(1, len(platforms)):
-            max_horizontal_distance = 150  # Maximum jump distance
-            if abs(platforms[i].rect.centerx - platforms[i - 1].rect.centerx) > max_horizontal_distance:
-                # Move platform closer to previous one
-                if platforms[i].rect.centerx < platforms[i - 1].rect.centerx:
-                    platforms[i].rect.x = max(0, platforms[i - 1].rect.centerx - max_horizontal_distance - platforms[i].rect.width // 2)
-                else:
-                    platforms[i].rect.x = min(self.WIDTH - platforms[i].rect.width, 
-                                            platforms[i - 1].rect.centerx + max_horizontal_distance - platforms[i].rect.width // 2)
-
-        # Final boundary checks
-        for platform in platforms:
-            if platform.rect.y > self.HEIGHT - 160:
-                platform.rect.y = self.HEIGHT - 160
-            if platform.rect.x > self.WIDTH - 80:
-                platform.rect.x = self.WIDTH - 80
-            if platform.rect.x < 0:
-                platform.rect.x = 0
-
-        # Add platforms to the game
-        for platform in platforms:
             self.game.all_sprites.add(platform)
             self.game.platforms.add(platform)
 
