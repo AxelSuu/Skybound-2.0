@@ -232,6 +232,16 @@ class LevelClass:
         from utils.database_logic import GetScore
         
         current_level = GetScore()
+        # Daily challenge: seed generation from the date so the layout is the
+        # same for everyone that day. Seeding the global RNG also makes mob and
+        # power-up placement deterministic for the run.
+        from utils import daily
+        gen_rng = random
+        if daily.is_active():
+            seed = daily.daily_seed() + current_level
+            random.seed(seed)
+            gen_rng = random.Random(seed)
+
         # Pick the biome for this level and bake its tint onto the background.
         self.theme = theme_for_level(current_level)
         self.sky = apply_tint(self._load_sky(self.theme["sky"]), self.theme["tint"])
@@ -266,7 +276,7 @@ class LevelClass:
         num_platforms = base_platforms + extra_platforms
 
         platform_rects = build_reachable_platforms(
-            num_platforms, current_level, self.WIDTH, self.HEIGHT
+            num_platforms, current_level, self.WIDTH, self.HEIGHT, rng=gen_rng
         )
         platforms = []
         for r in platform_rects:

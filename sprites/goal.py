@@ -65,7 +65,7 @@ class Goal(pg.sprite.Sprite):
         
         # Load the goal sprite image
         self.image = pg.image.load(
-            os.path.join(self.img_folder_path, "goal2.png")
+            os.path.join(self.img_folder_path, "Goal2.png")
         ).convert_alpha()
         
         # Set up collision rectangle and position

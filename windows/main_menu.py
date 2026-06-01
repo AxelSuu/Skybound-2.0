@@ -31,10 +31,13 @@ from utils.database_logic import (
     SetGamestate,
     SetHat,
     SetChar,
+    SetScore,
+    SetLevel,
     manualSetHighScore,
     SelectedChar,
     Hat,
 )
+from utils.daily import set_active as set_daily_active, get_daily_best
 
 
 class Main_menu:
