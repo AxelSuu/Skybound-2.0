@@ -1,0 +1,19 @@
+# uv / virtual environment
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+
+# PyInstaller build artifacts
+build/
+dist/
+
+# Test / tooling caches
+.pytest_cache/
+.ruff_cache/
+
+# Player save data
+save.json
+
+txts/*
