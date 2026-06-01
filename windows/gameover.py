@@ -1,6 +1,7 @@
 import pygame as pg
 from utils.draw_text import draw_text
 from utils.database_logic import GetHighScore, GetScore, SetGamestate, SetLevel
+from constants import WIDTH, HEIGHT
 
 
 """ General gameover screen when player dies or wins the game."""
@@ -8,8 +9,8 @@ from utils.database_logic import GetHighScore, GetScore, SetGamestate, SetLevel
 
 class Gameover:
     def __init__(self):
-        self.WIDTH = 480
-        self.HEIGHT = 600
+        self.WIDTH = WIDTH
+        self.HEIGHT = HEIGHT
         self.LIGHTBLUE = (135, 206, 235)
         self.on_gameover = True
         self.screen = pg.display.set_mode((self.WIDTH, self.HEIGHT))

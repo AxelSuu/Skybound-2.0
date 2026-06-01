@@ -21,9 +21,13 @@ Date: July 2025
 import pygame as pg
 import os
 from levels.level1 import LevelClass
-from utils.database_logic import *
+from utils.database_logic import (
+    GetLevel, GetScore, GetHighScore, SetHighScore, SetScore, SetGamestate,
+)
 from utils.effects import EffectsManager
-from utils.sound_effects import *
+from utils.sound_effects import (
+    play_land_sound, play_victory_sound, play_damage_sound, play_coin_sound,
+)
 from utils.achievements import check_level_achievement, check_coin_achievement, check_no_damage_achievement
 from utils.player_stats import player_stats
 from sprites.powerups import PowerUpManager
@@ -191,140 +195,129 @@ class Loop():
         self.player_was_on_floor = self.player.on_floor
 
     def handle_collisions(self):
-        # Player platform collision (one-way / pass-through)
+        # Platform landing (one-way / pass-through) for player and all mobs
         self.player.resolve_platform_landing(self.platforms)
-
-        # Mob platform collision (same one-way rule)
         for mob in self.mobs:
             mob.resolve_platform_landing(self.platforms)
 
-        # Player goal collision
-        win = pg.sprite.spritecollide(self.player, self.goals, False)
-        if win:
-            # Check achievements
-            level_completed = GetScore()
-            level_achievements = check_level_achievement(level_completed)
-            
-            # Check speed run achievement
-            level_time = (pg.time.get_ticks() - self.level_start_time) / 1000
-            if level_time < 30:
-                from utils.achievements import check_speed_run_achievement
-                speed_achievement = check_speed_run_achievement()
-                if speed_achievement:
-                    level_achievements.append(speed_achievement)
-                    
-            # Check no damage achievement
-            if not self.player_took_damage_this_level:
-                no_damage_achievement = check_no_damage_achievement()
-                if no_damage_achievement:
-                    level_achievements.append(no_damage_achievement)
-            
-            # Display achievement notifications
-            for achievement in level_achievements:
-                if achievement:
-                    self.effects_manager.add_floating_text(
-                        WIDTH / 2, 100, 
-                        f"Achievement: {achievement.name}!", 
-                        (255, 215, 0)
-                    )
-            
-            SetHighScore(GetScore())
-            player_stats.save_stats(self.player)   # persist health & coins to next level
-            if daily.is_active():
-                daily.record_daily_result(level_completed)
-            SetScore(GetScore() + 1)
-            self.running = False
-            play_victory_sound()
-            self.effects_manager.create_explosion(
-                self.player.pos.x, self.player.pos.y, (0, 255, 0)
-            )
-            if GetScore() > GetHighScore() and GetScore() > 2:
-                SetGamestate("NEW_HIGHSCORE")
-            else:
-                SetGamestate("GAME_OVER")
+        self._check_goal_collision()
+        self._check_mob_collision()
+        self._check_projectile_collision()
+        self._check_powerup_collision()
+        self._check_pause_button()
 
-        # Player mob collision
-        end2 = pg.sprite.spritecollide(self.player, self.mobs, False)
-        if end2:
+    def _check_goal_collision(self):
+        if not pg.sprite.spritecollide(self.player, self.goals, False):
+            return
+
+        level_completed = GetScore()
+        level_achievements = check_level_achievement(level_completed)
+
+        level_time = (pg.time.get_ticks() - self.level_start_time) / 1000
+        if level_time < 30:
+            from utils.achievements import check_speed_run_achievement
+            speed_achievement = check_speed_run_achievement()
+            if speed_achievement:
+                level_achievements.append(speed_achievement)
+
+        if not self.player_took_damage_this_level:
+            no_damage_achievement = check_no_damage_achievement()
+            if no_damage_achievement:
+                level_achievements.append(no_damage_achievement)
+
+        for achievement in level_achievements:
+            if achievement:
+                self.effects_manager.add_floating_text(
+                    WIDTH / 2, 100, f"Achievement: {achievement.name}!", (255, 215, 0)
+                )
+
+        SetHighScore(GetScore())
+        player_stats.save_stats(self.player)
+        if daily.is_active():
+            daily.record_daily_result(level_completed)
+        SetScore(GetScore() + 1)
+        self.running = False
+        play_victory_sound()
+        self.effects_manager.create_explosion(self.player.pos.x, self.player.pos.y, (0, 255, 0))
+        if GetScore() > GetHighScore() and GetScore() > 2:
+            SetGamestate("NEW_HIGHSCORE")
+        else:
+            SetGamestate("GAME_OVER")
+
+    def _check_mob_collision(self):
+        if not pg.sprite.spritecollide(self.player, self.mobs, False):
+            return
+
+        if self.player.take_damage():
+            self.player_took_damage_this_level = True
+            play_damage_sound()
+            self.effects_manager.start_hit_stop(6)
+            self.effects_manager.create_explosion(self.player.pos.x, self.player.pos.y, (255, 0, 0))
+            self.effects_manager.add_floating_text(
+                self.player.pos.x, self.player.pos.y - 20, "OUCH!", (255, 0, 0)
+            )
+
+        if self.player.is_dead():
+            self._player_died()
+
+    def _check_projectile_collision(self):
+        for mob in self.mobs:
+            if not hasattr(mob, 'projectiles'):
+                continue
+            if not pg.sprite.spritecollide(self.player, mob.projectiles, True):
+                continue
             if self.player.take_damage():
                 self.player_took_damage_this_level = True
                 play_damage_sound()
-                self.effects_manager.start_hit_stop(6)  # freeze-frame on the hit
+                self.effects_manager.start_hit_stop(6)
                 self.effects_manager.create_explosion(
-                    self.player.pos.x, self.player.pos.y, (255, 0, 0)
+                    self.player.pos.x, self.player.pos.y, (255, 100, 0)
                 )
-                self.effects_manager.add_floating_text(
-                    self.player.pos.x, self.player.pos.y - 20,
-                    "OUCH!", (255, 0, 0)
-                )
-                
             if self.player.is_dead():
-                player_stats.reset_stats()
-                self.running = False
-                SetScore(1)
-                SetGamestate("GAME_OVER")
+                self._player_died()
 
-        # Power-up collisions
+    def _check_powerup_collision(self):
         self.powerup_manager.check_collisions(self.player)
-        
-        # Check for power-up collection effects
+
         for powerup in self.powerup_manager.power_ups:
-            if powerup.collected:
-                self.effects_manager.create_collectible_effect(
-                    powerup.pos.x, powerup.pos.y, powerup.image.get_at((0, 0))[:3]
-                )
-                play_coin_sound()
-                
-                # Add floating text based on power-up type
-                if hasattr(powerup, 'value'):  # Coin
-                    self.total_coins_collected += powerup.value
-                    self.player.add_coins(powerup.value)
-                    coin_achievements = check_coin_achievement(self.total_coins_collected)
-                    for achievement in coin_achievements:
-                        if achievement:
-                            self.effects_manager.add_floating_text(
-                                WIDTH / 2, 120, 
-                                f"Achievement: {achievement.name}!", 
-                                (255, 215, 0)
-                            )
-                    
-                    self.effects_manager.add_floating_text(
-                        powerup.pos.x, powerup.pos.y - 20, 
-                        f"+{powerup.value}", (255, 215, 0)
-                    )
-                else:  # Other power-ups
-                    self.effects_manager.add_floating_text(
-                        powerup.pos.x, powerup.pos.y - 20, 
-                        powerup.__class__.__name__.replace('Boost', '').replace('Potion', '').upper(), 
-                        (255, 255, 255)
-                    )
+            if not powerup.collected:
+                continue
+            self.effects_manager.create_collectible_effect(
+                powerup.pos.x, powerup.pos.y, powerup.image.get_at((0, 0))[:3]
+            )
+            play_coin_sound()
 
-        # Handle projectile collisions (for shooter mobs)
-        for mob in self.mobs:
-            if hasattr(mob, 'projectiles'):
-                projectile_hits = pg.sprite.spritecollide(self.player, mob.projectiles, True)
-                if projectile_hits:
-                    if self.player.take_damage():
-                        self.player_took_damage_this_level = True
-                        play_damage_sound()
-                        self.effects_manager.start_hit_stop(6)  # freeze-frame on the hit
-                        self.effects_manager.create_explosion(
-                            self.player.pos.x, self.player.pos.y, (255, 100, 0)
+            if hasattr(powerup, 'value'):  # Coin
+                self.total_coins_collected += powerup.value
+                self.player.add_coins(powerup.value)
+                coin_achievements = check_coin_achievement(self.total_coins_collected)
+                for achievement in coin_achievements:
+                    if achievement:
+                        self.effects_manager.add_floating_text(
+                            WIDTH / 2, 120, f"Achievement: {achievement.name}!", (255, 215, 0)
                         )
-                        
-                    if self.player.is_dead():
-                        player_stats.reset_stats()
-                        self.running = False
-                        SetScore(1)
-                        SetGamestate("GAME_OVER")
+                self.effects_manager.add_floating_text(
+                    powerup.pos.x, powerup.pos.y - 20, f"+{powerup.value}", (255, 215, 0)
+                )
+            else:
+                label = powerup.__class__.__name__.replace('Boost', '').replace('Potion', '').upper()
+                self.effects_manager.add_floating_text(
+                    powerup.pos.x, powerup.pos.y - 20, label, (255, 255, 255)
+                )
 
-        # Mouse pause button collision
+    def _check_pause_button(self):
         self.mouse = pg.mouse.get_pos()
         self.click = pg.mouse.get_pressed()
-        if (self.closebutton.rect.x + 50 > self.mouse[0] > self.closebutton.rect.x and
-                self.closebutton.rect.y + 50 > self.mouse[1] > self.closebutton.rect.y):
+        bx, by = self.closebutton.rect.x, self.closebutton.rect.y
+        if bx < self.mouse[0] < bx + 50 and by < self.mouse[1] < by + 50:
             if self.click[0] == 1:
                 Pause(self, self.main)
+
+    def _player_died(self):
+        player_stats.reset_stats()
+        self.running = False
+        SetScore(1)
+        SetGamestate("GAME_OVER")
 
     def draw(self):
         self.screen.fill(WHITE)

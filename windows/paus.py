@@ -7,6 +7,7 @@ from utils.database_logic import (
     SetLevel,
     SetHighScore,
 )
+from constants import WIDTH, HEIGHT
 
 
 """ Pause screen class to display in-game menu, missing functionality:
@@ -17,8 +18,8 @@ from utils.database_logic import (
 
 class Pause:
     def __init__(self, loop, main):
-        self.WIDTH = 480
-        self.HEIGHT = 600
+        self.WIDTH = WIDTH
+        self.HEIGHT = HEIGHT
         self.LIGHTBLUE = (135, 206, 235)
         self.running1 = True
         self.loop = loop
@@ -56,11 +57,9 @@ class Pause:
                 self.WIDTH / 2,
                 self.HEIGHT * 3 / 4 + 100,
             )
-
-            # This functionality is not implemented
             draw_text(
                 self.screen,
-                "space to pause music",
+                "Space to toggle music",
                 22,
                 self.WIDTH / 2,
                 self.HEIGHT * 1 / 4 - 100,
@@ -87,15 +86,11 @@ class Pause:
             if keys[pg.K_SPACE] and not self.space_pressed:
                 self.space_pressed = True
                 if self.main.pause_music:
-                    # Unpause music
                     self.main.channel3.unpause()
                     self.main.pause_music = False
-                    print("Music unpaused")
                 else:
-                    # Pause music
                     self.main.channel3.pause()
                     self.main.pause_music = True
-                    print("Music paused")
             elif not keys[pg.K_SPACE]:
                 self.space_pressed = False
 

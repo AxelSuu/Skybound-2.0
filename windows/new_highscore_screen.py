@@ -2,6 +2,7 @@ import pygame as pg
 import os
 from utils.draw_text import draw_text
 from utils.database_logic import GetHighScore, GetScore, SetGamestate, SetLevel
+from constants import WIDTH, HEIGHT, FPS
 
 
 """ Only called when score > highscore for dopamine rush."""
@@ -9,14 +10,15 @@ from utils.database_logic import GetHighScore, GetScore, SetGamestate, SetLevel
 
 class NewHighscore:
     def __init__(self):
-        self.WIDTH = 480
-        self.HEIGHT = 600
+        self.WIDTH = WIDTH
+        self.HEIGHT = HEIGHT
         self.WHITE = (255, 255, 255)
         self.img_folder_path = os.path.abspath(
             os.path.join(os.path.dirname(__file__), "..", "imgs")
         )
         self.on_NH = True
         self.screen = pg.display.set_mode((self.WIDTH, self.HEIGHT))
+        self.clock = pg.time.Clock()
         self.bg_scroll = 0
         self.background = pg.image.load(
             os.path.join(self.img_folder_path, "sky2.png")
@@ -26,6 +28,7 @@ class NewHighscore:
 
     def show_NH_screen(self):
         while self.on_NH:
+            self.clock.tick(FPS)
             self.screen.fill(self.WHITE)
             self.bg_scroll += 0.5
             if self.bg_scroll >= self.background.get_width():

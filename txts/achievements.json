@@ -1,26 +1,26 @@
 [
   {
     "id": "first_level",
-    "unlocked": false,
-    "progress": 0,
-    "unlock_date": null
+    "unlocked": true,
+    "progress": 1,
+    "unlock_date": "2026-06-01 16:22:08"
   },
   {
     "id": "level_5",
     "unlocked": false,
-    "progress": 0,
+    "progress": 2,
     "unlock_date": null
   },
   {
     "id": "level_10",
     "unlocked": false,
-    "progress": 0,
+    "progress": 2,
     "unlock_date": null
   },
   {
     "id": "level_25",
     "unlocked": false,
-    "progress": 0,
+    "progress": 2,
     "unlock_date": null
   },
   {
@@ -37,9 +37,9 @@
   },
   {
     "id": "no_damage_level",
-    "unlocked": false,
-    "progress": 0,
-    "unlock_date": null
+    "unlocked": true,
+    "progress": 1,
+    "unlock_date": "2026-06-01 16:22:11"
   },
   {
     "id": "use_10_powerups",
@@ -55,9 +55,9 @@
   },
   {
     "id": "speed_run",
-    "unlocked": false,
-    "progress": 0,
-    "unlock_date": null
+    "unlocked": true,
+    "progress": 1,
+    "unlock_date": "2026-06-01 16:22:08"
   },
   {
     "id": "jump_master",

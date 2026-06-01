@@ -43,64 +43,36 @@ class Particle:
     """
     
     def __init__(self, x, y, vel_x=0, vel_y=0, color=(255, 255, 255), size=3, lifetime=60):
-        """
-        Initialize a particle with specified properties.
-        
-        Args:
-            x, y (float): Starting position
-            vel_x, vel_y (float): Initial velocity components
-            color (tuple): RGB color tuple
-            size (int): Particle size in pixels
-            lifetime (int): Duration in frames (60 = 1 second at 60fps)
-        """
         self.x = x
         self.y = y
         self.vel_x = vel_x
         self.vel_y = vel_y
-        self.color = color
+        self.color = color[:3]  # store RGB only; alpha computed at draw time
         self.size = size
         self.lifetime = lifetime
         self.max_lifetime = lifetime
-        self.gravity = 0.1  # Subtle gravity effect
-        
+        self.gravity = 0.1
+        # Pre-allocated surface reused every frame to avoid per-frame allocation.
+        _d = size * 2 + 2
+        self._surf = pg.Surface((_d, _d), pg.SRCALPHA)
+
     def update(self):
-        """
-        Update particle position and physics.
-        
-        This method:
-        1. Updates position based on velocity
-        2. Applies gravity to vertical velocity
-        3. Decreases lifetime counter
-        4. Handles particle physics simulation
-        """
-        # Update position
         self.x += self.vel_x
         self.y += self.vel_y
-        
-        # Apply gravity
         self.vel_y += self.gravity
         self.lifetime -= 1
-        
-        # Fade out over time
-        alpha = int(255 * (self.lifetime / self.max_lifetime))
-        if len(self.color) == 3:
-            self.color = (*self.color, alpha)
-        else:
-            self.color = (*self.color[:3], alpha)
-            
+
     def draw(self, screen):
-        """Draw the particle"""
         if self.lifetime > 0:
-            current_size = max(1, int(self.size * (self.lifetime / self.max_lifetime)))
-            # Create a surface with per-pixel alpha
-            surf = pg.Surface((current_size * 2, current_size * 2), pg.SRCALPHA)
-            alpha = int(255 * (self.lifetime / self.max_lifetime))
-            color_with_alpha = (*self.color[:3], alpha)
-            pg.draw.circle(surf, color_with_alpha, (current_size, current_size), current_size)
-            screen.blit(surf, (self.x - current_size, self.y - current_size))
-            
+            ratio = self.lifetime / self.max_lifetime
+            current_size = max(1, int(self.size * ratio))
+            alpha = int(255 * ratio)
+            self._surf.fill((0, 0, 0, 0))
+            pg.draw.circle(self._surf, (*self.color, alpha),
+                           (self.size + 1, self.size + 1), current_size)
+            screen.blit(self._surf, (int(self.x) - self.size - 1, int(self.y) - self.size - 1))
+
     def is_alive(self):
-        """Check if particle is still alive"""
         return self.lifetime > 0
 
 
@@ -267,56 +239,12 @@ class FloatingTextManager:
             text.draw(screen, font)
 
 
-class PowerUpIndicator:
-    """Visual indicator for active power-ups"""
-    def __init__(self, x, y, effect_name, duration, color):
-        self.x = x
-        self.y = y
-        self.effect_name = effect_name
-        self.duration = duration
-        self.max_duration = duration
-        self.color = color
-        self.pulse_timer = 0
-        
-    def update(self):
-        """Update indicator"""
-        self.duration -= 1
-        self.pulse_timer += 1
-        
-    def draw(self, screen, font):
-        """Draw power-up indicator"""
-        if self.duration > 0:
-            # Create pulsing effect
-            pulse = 1 + 0.2 * math.sin(self.pulse_timer * 0.2)
-            
-            # Draw background
-            bg_color = (*self.color, 100)
-            bg_surface = pg.Surface((80, 20), pg.SRCALPHA)
-            pg.draw.rect(bg_surface, bg_color, (0, 0, 80, 20), border_radius=5)
-            screen.blit(bg_surface, (self.x, self.y))
-            
-            # Draw progress bar
-            progress = self.duration / self.max_duration
-            bar_width = int(76 * progress)
-            pg.draw.rect(screen, self.color, (self.x + 2, self.y + 2, bar_width, 16))
-            
-            # Draw text
-            text_surface = font.render(self.effect_name, True, (255, 255, 255))
-            text_rect = text_surface.get_rect(center=(self.x + 40, self.y + 10))
-            screen.blit(text_surface, text_rect)
-            
-    def is_alive(self):
-        """Check if indicator is still alive"""
-        return self.duration > 0
-
-
 class EffectsManager:
     """Centralized effects management"""
     def __init__(self):
         self.particle_system = ParticleSystem()
         self.screen_shake = ScreenShake()
         self.floating_text = FloatingTextManager()
-        self.power_up_indicators = []
         self.hit_stop = 0  # Frames of gameplay freeze remaining (juice)
 
     def start_hit_stop(self, frames):
@@ -332,45 +260,28 @@ class EffectsManager:
         return self.hit_stop > 0
 
     def update(self):
-        """Update all effects"""
         if self.hit_stop > 0:
             self.hit_stop -= 1
         self.particle_system.update()
         self.screen_shake.update()
         self.floating_text.update()
-        self.power_up_indicators = [i for i in self.power_up_indicators if i.is_alive()]
-        for indicator in self.power_up_indicators:
-            indicator.update()
-            
+
     def draw(self, screen, font):
-        """Draw all effects"""
         self.particle_system.draw(screen)
         self.floating_text.draw(screen, font)
-        for indicator in self.power_up_indicators:
-            indicator.draw(screen, font)
-            
+
     def create_explosion(self, x, y, color=(255, 100, 0)):
-        """Create explosion effect"""
         self.particle_system.create_explosion(x, y, color)
         self.screen_shake.start_shake(5, 10)
-        
+
     def create_collectible_effect(self, x, y, color=(255, 255, 0)):
-        """Create collectible effect"""
         self.particle_system.create_collectible_effect(x, y, color)
-        
+
     def create_landing_dust(self, x, y, direction=0):
-        """Create landing dust effect"""
         self.particle_system.create_landing_dust(x, y, direction)
-        
+
     def add_floating_text(self, x, y, text, color=(255, 255, 255)):
-        """Add floating text"""
         self.floating_text.add_text(x, y, text, color)
-        
-    def add_power_up_indicator(self, x, y, effect_name, duration, color):
-        """Add power-up indicator"""
-        indicator = PowerUpIndicator(x, y, effect_name, duration, color)
-        self.power_up_indicators.append(indicator)
-        
+
     def get_shake_offset(self):
-        """Get screen shake offset"""
         return self.screen_shake.get_offset()

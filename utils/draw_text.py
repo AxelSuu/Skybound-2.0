@@ -21,49 +21,19 @@ Date: July 2025
 import pygame as pg
 import os
 
+_FONT_PATH = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "font", "Outfit-Regular.ttf")
+)
+_BLACK = (0, 0, 0)
+_font_cache: dict = {}
+
 
 def draw_text(screen, text, size, x, y):
-    """
-    Draw text on screen with specified parameters.
-    
-    This function renders text using the custom Outfit font, positioning it
-    with center alignment at the specified coordinates. The text is rendered
-    in black color for optimal contrast on light backgrounds.
-    
-    Args:
-        screen (pygame.Surface): The screen surface to draw on
-        text (str): The text string to render
-        size (int): Font size in pixels
-        x (int): X coordinate for text center position
-        y (int): Y coordinate for text center position
-    
-    Features:
-        - Uses custom Outfit font for consistent typography
-        - Center-aligned positioning for perfect button/UI alignment
-        - Black color (#000000) for optimal readability
-        - Handles font loading with proper path resolution
-    
-    Usage:
-        draw_text(screen, "Start Game", 24, 240, 300)
-        draw_text(screen, "Score: 1250", 16, 100, 50)
-    """
-    # Construct path to custom font file
-    font_folder_path = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "..", "font", "Outfit-Regular.ttf")
-    )
-    
-    # Define text color (black for optimal contrast)
-    BLACK = (0, 0, 0)
-    
-    # Load font with specified size
-    font = pg.font.Font(font_folder_path, size)
-    
-    # Render text to surface with anti-aliasing
-    text_surface = font.render(text, True, BLACK)
-    
-    # Get text rectangle and center it at specified position
+    """Draw center-aligned black text at (x, y) using the Outfit font."""
+    if size not in _font_cache:
+        _font_cache[size] = pg.font.Font(_FONT_PATH, size)
+    font = _font_cache[size]
+    text_surface = font.render(text, True, _BLACK)
     text_rect = text_surface.get_rect()
     text_rect.center = (x, y)
-    
-    # Draw the text to the screen
     screen.blit(text_surface, text_rect)

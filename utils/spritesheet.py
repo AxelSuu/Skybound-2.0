@@ -80,7 +80,6 @@ class Spritesheet:
         self.meta_data = self.filename.replace("png", "json")
         with open(self.meta_data) as f:
             self.data = json.load(f)
-        f.close()
 
     def get_sprite(self, x, y, width, height):
         """

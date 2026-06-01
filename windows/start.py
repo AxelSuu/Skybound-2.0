@@ -7,7 +7,7 @@ from utils.database_logic import (
     SetLevel,
     GetScore,
 )
-
+from constants import WIDTH, HEIGHT
 import string
 import time
 import random
@@ -18,8 +18,8 @@ import random
 
 class Start:
     def __init__(self):
-        self.WIDTH = 480
-        self.HEIGHT = 600
+        self.WIDTH = WIDTH
+        self.HEIGHT = HEIGHT
         self.LIGHTBLUE = (135, 206, 235)
         self.OnstartScreen = True
         self.screen = pg.display.set_mode((self.WIDTH, self.HEIGHT))

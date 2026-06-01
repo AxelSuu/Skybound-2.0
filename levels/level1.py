@@ -30,7 +30,7 @@ from sprites.goal import Goal
 from sprites.mob import Mob
 from sprites.mob_types import create_random_mob, BossMob
 from sprites.pausebutton import Closebutton
-from constants import MAX_REACH_V, MAX_REACH_H
+from constants import WIDTH, HEIGHT, MAX_REACH_V, MAX_REACH_H
 from levels.themes import theme_for_level, apply_tint
 
 
@@ -130,10 +130,10 @@ class LevelClass:
             os.path.join(os.path.dirname(__file__), "..", "imgs")
         )
         
-        # Define screen dimensions for level creation
-        self.WIDTH = 480
-        self.HEIGHT = 600
-        
+        # Screen dimensions for level creation
+        self.WIDTH = WIDTH
+        self.HEIGHT = HEIGHT
+
         # Load background images for visual variety across levels
         self.skys = [
             pg.image.load(
@@ -378,24 +378,3 @@ class LevelClass:
                 self.game.all_sprites.add(mob)
                 self.game.mobs.add(mob)
         
-        # Add some variety to higher levels
-        if current_level > 5:
-            # Add moving platforms (we'll implement this as a subclass)
-            self.add_special_platforms(current_level)
-            
-    def add_special_platforms(self, level):
-        """Add special platform types for higher levels"""
-        # For now, we'll just add some randomly positioned smaller platforms
-        # In a full implementation, you could add moving platforms, disappearing platforms, etc.
-        
-        if level > 8:
-            # Add some smaller, harder to reach platforms
-            for _ in range(2):
-                width = random.randint(30, 50)
-                height = 20
-                x = random.randint(0, self.WIDTH - width)
-                y = random.randint(60, self.HEIGHT - 200)
-                
-                platform = Platform2(x, y, width, height)
-                self.game.all_sprites.add(platform)
-                self.game.platforms.add(platform)

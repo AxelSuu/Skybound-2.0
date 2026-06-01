@@ -23,19 +23,15 @@ Date: July 2025
 """
 
 import pygame as pg
-import numpy as np
 import os
 
-# Import database utilities for state management
-from utils.database_logic import *
-
-# Import all game window classes
-from windows.main_menu import *
-from windows.start import *
-from windows.gameover import *
-from windows.paus import *
-from gameloop.loop import *
-from windows.new_highscore_screen import *
+from utils.database_logic import GetGamestate, SetGamestate
+from windows.main_menu import Main_menu
+from windows.start import Start
+from windows.gameover import Gameover
+from windows.paus import Pause
+from gameloop.loop import Loop
+from windows.new_highscore_screen import NewHighscore
 
 
 class Main_Loop:

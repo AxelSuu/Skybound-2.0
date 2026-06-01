@@ -26,6 +26,7 @@ import pygame as pg
 import os
 import time
 from utils.draw_text import draw_text
+from constants import WIDTH, HEIGHT, FPS
 from utils.database_logic import (
     GetHighScore,
     SetGamestate,
@@ -86,9 +87,9 @@ class Main_menu:
         5. Starts the main menu loop
         """
         # Screen configuration
-        self.WIDTH = 480
-        self.HEIGHT = 600
-        
+        self.WIDTH = WIDTH
+        self.HEIGHT = HEIGHT
+
         # Color constants for UI elements
         self.WHITE = (255, 255, 255)
         self.BLACK = (0, 0, 0)
@@ -112,6 +113,7 @@ class Main_menu:
         ).convert()
         self.background2 = pg.transform.flip(self.background, True, False).convert()
         pg.display.set_icon(icon)
+        self.clock = pg.time.Clock()
         # Unified button width to match character selection buttons
         self.BUTTON_WIDTH = 200
         self.main_menu()
@@ -119,7 +121,7 @@ class Main_menu:
     def main_menu(self):
         main_menu = True
         while main_menu:
-
+            self.clock.tick(FPS)
             # Background animation block
             self.screen.fill(self.WHITE)
             self.bg_scroll += 0.5
