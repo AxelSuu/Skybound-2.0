@@ -28,7 +28,7 @@ from sprites.player import Player
 from sprites.platform import Platform2
 from sprites.goal import Goal
 from sprites.mob import Mob
-from sprites.mob_types import create_random_mob
+from sprites.mob_types import create_random_mob, BossMob
 from sprites.pausebutton import Closebutton
 from constants import MAX_REACH_V, MAX_REACH_H
 from levels.themes import theme_for_level, apply_tint
@@ -277,7 +277,14 @@ class LevelClass:
 
         # Create multiple mobs based on level
         num_mobs = min(1 + current_level // 4, 3)  # 1 mob initially, +1 every 4 levels, max 3
-        
+
+        # Every 10th level is a boss encounter: one big boss, no regular mobs.
+        if current_level % 10 == 0:
+            num_mobs = 0
+            boss = BossMob(self.WIDTH // 2, 150)
+            self.game.all_sprites.add(boss)
+            self.game.mobs.add(boss)
+
         # Player spawn position
         player_spawn_x = 30
         player_spawn_y = self.HEIGHT * 3 / 4
