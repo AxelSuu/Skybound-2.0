@@ -7,20 +7,20 @@
   },
   {
     "id": "level_5",
-    "unlocked": false,
-    "progress": 1,
-    "unlock_date": null
+    "unlocked": true,
+    "progress": 5,
+    "unlock_date": "2026-06-01 14:32:08"
   },
   {
     "id": "level_10",
     "unlocked": false,
-    "progress": 1,
+    "progress": 4,
     "unlock_date": null
   },
   {
     "id": "level_25",
     "unlocked": false,
-    "progress": 1,
+    "progress": 4,
     "unlock_date": null
   },
   {
@@ -37,9 +37,9 @@
   },
   {
     "id": "no_damage_level",
-    "unlocked": false,
-    "progress": 0,
-    "unlock_date": null
+    "unlocked": true,
+    "progress": 1,
+    "unlock_date": "2026-06-01 14:31:59"
   },
   {
     "id": "use_10_powerups",

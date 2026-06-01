@@ -191,20 +191,12 @@ class Loop():
         self.player_was_on_floor = self.player.on_floor
 
     def handle_collisions(self):
-        # Player platform collision
-        hits = pg.sprite.spritecollide(self.player, self.platforms, False)
-        if hits and self.player.vel.y >= 0:
-            self.player.pos.y = hits[0].rect.top
-            self.player.vel.y = 0
-            self.player.on_floor = True
+        # Player platform collision (one-way / pass-through)
+        self.player.resolve_platform_landing(self.platforms)
 
-        # Mob platform collision
+        # Mob platform collision (same one-way rule)
         for mob in self.mobs:
-            hits2 = pg.sprite.spritecollide(mob, self.platforms, False)
-            if hits2 and  mob.vel.y >= 0:
-                mob.pos.y = hits2[0].rect.top
-                mob.vel.y = 0
-                mob.on_floor = True
+            mob.resolve_platform_landing(self.platforms)
 
         # Player goal collision
         win = pg.sprite.spritecollide(self.player, self.goals, False)

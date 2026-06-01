@@ -33,6 +33,9 @@ class PhysicsSprite(pg.sprite.Sprite):
         self.vel = pg.Vector2(0, 0)
         self.acc = pg.Vector2(0, 0)
         self.on_floor = False
+        # Feet position at the end of the previous frame, used by the one-way
+        # platform test in resolve_platform_landing().
+        self.prev_bottom = 0.0
 
     def seed_body(self, center):
         """Anchor the motion vectors at ``center`` (typically ``rect.center``)."""
@@ -55,8 +58,45 @@ class PhysicsSprite(pg.sprite.Sprite):
         self.pos += self.vel
         self._wrap_and_sync(hitbox_dx, hitbox_dy)
 
+    def resolve_platform_landing(self, platforms):
+        """One-way (pass-through) platform landing.
+
+        Snap the feet onto a platform top only when the body crossed that top
+        edge moving downward this frame: it is not moving up, it overlaps the
+        platform horizontally, and its feet went from at/above the top last
+        frame (``prev_bottom``) to at/below the top now. Walking into a side or
+        jumping up through a platform never snaps. Returns True if it landed.
+
+        The test is on the *crossing*, not on current rect overlap, so a body
+        resting exactly on a 1px-thin top edge stays planted (integer rects
+        only touch, never overlap, at the rest position).
+        """
+        collider = getattr(self, "hitbox", self.rect)
+        self.on_floor = False
+        if self.vel.y < 0:
+            return False
+        current_bottom = self.pos.y  # feet this frame (rect.midbottom == pos)
+        for plat in platforms:
+            # Require horizontal overlap with the platform span.
+            if collider.right <= plat.rect.left or collider.left >= plat.rect.right:
+                continue
+            plat_top = plat.rect.top
+            if self.prev_bottom <= plat_top <= current_bottom:
+                self.pos.y = plat_top
+                self.vel.y = 0
+                self.on_floor = True
+                # Re-sync the collision rects so the feet rest exactly on the
+                # surface and prev_bottom == plat_top next frame (stable rest).
+                self.rect.bottom = plat_top
+                if hasattr(self, "hitbox"):
+                    self.hitbox.bottom = plat_top
+                return True
+        return False
+
     def _wrap_and_sync(self, hitbox_dx=0, hitbox_dy=0):
         """Wrap horizontally across the screen and sync rect + hitbox to pos."""
+        # Remember last frame's feet before re-syncing, for the one-way test.
+        self.prev_bottom = self.rect.bottom
         if self.pos.x > self.WIDTH:
             self.pos.x = 0
         if self.pos.x < 0:
