@@ -93,7 +93,7 @@ class Pause:
                     print("Music unpaused")
                 else:
                     # Pause music
-                    self.main.pause_music_func()
+                    self.main.channel3.pause()
                     self.main.pause_music = True
                     print("Music paused")
             elif not keys[pg.K_SPACE]:
