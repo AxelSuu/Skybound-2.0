@@ -25,6 +25,7 @@ from utils.database_logic import *
 from utils.effects import EffectsManager
 from utils.sound_effects import *
 from utils.achievements import check_level_achievement, check_coin_achievement, check_no_damage_achievement
+from utils.player_stats import player_stats
 from sprites.powerups import PowerUpManager
 from windows.paus import Pause
 from utils import daily
@@ -241,6 +242,7 @@ class Loop():
                     )
             
             SetHighScore(GetScore())
+            player_stats.save_stats(self.player)   # persist health & coins to next level
             if daily.is_active():
                 daily.record_daily_result(level_completed)
             SetScore(GetScore() + 1)
@@ -270,6 +272,7 @@ class Loop():
                 )
                 
             if self.player.is_dead():
+                player_stats.reset_stats()
                 self.running = False
                 SetScore(1)
                 SetGamestate("GAME_OVER")
@@ -289,6 +292,7 @@ class Loop():
                 if hasattr(powerup, 'value'):  # Coin
                     self.total_coins_collected += powerup.value
                     AddCoins(powerup.value)  # persist to the spendable coin balance
+                    self.player.coins += powerup.value  # keep the HUD display in sync
                     coin_achievements = check_coin_achievement(self.total_coins_collected)
                     for achievement in coin_achievements:
                         if achievement:
@@ -323,6 +327,7 @@ class Loop():
                         )
                         
                     if self.player.is_dead():
+                        player_stats.reset_stats()
                         self.running = False
                         SetScore(1)
                         SetGamestate("GAME_OVER")
