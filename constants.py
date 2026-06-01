@@ -23,6 +23,9 @@ MOB_FRICTION: float = -0.12    # Mob horizontal friction coefficient
 # --- Jumping ---------------------------------------------------------------
 JUMP_VELOCITY: int = -12       # Upward velocity of a normal jump
 JUMP_BOOST_VELOCITY: int = -16 # Upward velocity while jump-boost is active
+# Game-feel grace windows (frames @ 100 FPS).
+COYOTE_FRAMES: int = 6         # Grace to still jump just after leaving a ledge
+JUMP_BUFFER_FRAMES: int = 8    # Grace to register a jump pressed just before landing
 
 # --- Player gameplay -------------------------------------------------------
 START_HEALTH: int = 3          # Health the player spawns with
