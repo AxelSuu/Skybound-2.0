@@ -116,6 +116,21 @@ def test_reset_named_keys_only(tmp_path):
     assert sm.get("highscore") == 9  # untouched
 
 
+def test_wears_hat_requires_owned_and_equipped(fresh_facade):
+    db = fresh_facade
+    # Owned and equipped -> wears the hat.
+    db.SetHat("hat")
+    db.SetChar(1)
+    assert db.WearsHat() is True
+    # Regression: owned but switched back to "Normal" -> no hat.
+    db.SetChar(0)
+    assert db.WearsHat() is False
+    # Equipped but not owned (shouldn't happen via UI, but be defensive).
+    db.SetHat("0")
+    db.SetChar(1)
+    assert db.WearsHat() is False
+
+
 def test_reset_progress_keeps_settings(fresh_facade):
     db = fresh_facade
     sm = db.get_save_manager()

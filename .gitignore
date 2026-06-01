@@ -13,11 +13,6 @@ dist/
 .pytest_cache/
 .ruff_cache/
 
-# Player save data (migrated from txts/ on first run)
-save.json
-
-txts/*
-
 
 # uv / virtual environment
 .venv/
@@ -36,5 +31,7 @@ dist/
 
 # Player save data
 save.json
+txts/achievements.json
 
-txts/*
+.gitignore
+CLAUDE.md

@@ -10,7 +10,7 @@ added_files = [
     ('imgs/*.json', 'imgs'),
     ('sfxs/*.ogg', 'sfxs'),
     ('font/*.ttf', 'font'),
-    ('txts/*.txt', 'txts')
+    ('txts/*.json', 'txts')
 ]
 
 # Force-collect numpy in full. PyInstaller's static analysis misses some of

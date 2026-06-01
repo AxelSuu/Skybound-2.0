@@ -80,6 +80,18 @@ def SelectedChar():
     return int(get_save_manager().get("char"))
 
 
+def WearsHat():
+    """True only when the hat is both unlocked and currently equipped.
+
+    Ownership lives in ``hat`` (set by the shop on purchase); the equipped
+    selection lives in ``char`` (set in character selection). The player wears
+    the hat only when both agree — owning the hat but selecting "Normal" shows
+    no hat. This is the single source of truth so the shop, the character
+    screen and the player can never drift out of sync.
+    """
+    return Hat() == "hat" and SelectedChar() == 1
+
+
 def GetCoins():
     """Total coins collected across sessions (default 0)."""
     return int(get_save_manager().get("coins"))

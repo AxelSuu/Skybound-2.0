@@ -5,9 +5,36 @@ game loop relies on (pos/vel/acc vectors, rect, on_floor) must keep existing.
 """
 
 import pygame as pg
+import pytest
 
 from sprites.mob import Mob
 from sprites.player import Player
+from utils.save_manager import SaveManager
+
+
+@pytest.fixture
+def temp_save(tmp_path, monkeypatch):
+    """Isolate the global save singleton so tests don't clobber save.json."""
+    import utils.save_manager as sm_module
+
+    monkeypatch.setattr(sm_module, "_manager", SaveManager(str(tmp_path / "save.json")))
+
+
+def test_player_wears_hat_when_owned_and_equipped(temp_save):
+    import utils.database_logic as db
+
+    db.SetHat("hat")
+    db.SetChar(1)
+    assert Player().wears_hat is True
+
+
+def test_player_drops_hat_when_switched_to_normal(temp_save):
+    """Regression: owning the hat but selecting "Normal" must show no hat."""
+    import utils.database_logic as db
+
+    db.SetHat("hat")  # owned
+    db.SetChar(0)     # but "Normal" selected
+    assert Player().wears_hat is False
 
 
 def test_mob_constructs_with_physics_state():

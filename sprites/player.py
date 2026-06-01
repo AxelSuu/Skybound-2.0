@@ -20,7 +20,7 @@ Date: July 2025
 import pygame as pg
 import os
 from utils.spritesheet import Spritesheet
-from utils.database_logic import Hat, GetCoins, AddCoins
+from utils.database_logic import WearsHat, GetCoins, AddCoins
 from utils.player_stats import player_stats
 from utils.upgrades import apply_upgrades
 from sprites.base import PhysicsSprite
@@ -105,15 +105,14 @@ class Player(PhysicsSprite):
             os.path.join(os.path.dirname(__file__), "..", "imgs")
         )
         
-        # Load character customization (hat selection)
-        self.hat = Hat()
-        self.hat_image1 = pg.image.load(
+        # Load character customization. The player wears the hat only when it
+        # is both owned and equipped (see WearsHat) — owning it but selecting
+        # "Normal" must show no hat.
+        self.wears_hat = WearsHat()
+        self.hat_image = pg.image.load(
             os.path.join(self.img_folder_path, "hat1.png")
         ).convert_alpha()
-        self.hat_image2 = pg.image.load(
-            os.path.join(self.img_folder_path, "hat2.png")
-        ).convert_alpha()
-        
+
         # Load default character frame
         self.startframe = pg.image.load(
             os.path.join(self.img_folder_path, "IdleL2.png")
@@ -137,11 +136,8 @@ class Player(PhysicsSprite):
         # Load animation spritesheet
         self.spritesheet = Spritesheet("Playersheet.png")
         
-        # Load appropriate character animations based on hat selection
-        if self.hat == "0":
-            self.load_character()
-        elif self.hat == "hat":
-            self.load_hat_character()
+        # Load character animations, blitting the hat on if it's equipped.
+        self.load_character(wear_hat=self.wears_hat)
 
         self.image = self.startframe  # Start with the first frame
 
@@ -322,9 +318,12 @@ class Player(PhysicsSprite):
         # Clamp the shared frame index in case we just switched frame lists.
         self.image = frames[self.frame_index % len(frames)]
 
-    def load_character(self):
-        """Load the character frames for the player without a hat."""
+    def load_character(self, wear_hat=False):
+        """Load the player's animation frames from the spritesheet.
 
+        When ``wear_hat`` is True the hat is blitted onto every frame; otherwise
+        the bare character is used.
+        """
         self.idle_left_frames = [
             self.spritesheet.parse_sprite("idlel1.png"),
             self.spritesheet.parse_sprite("idlel2.png"),
@@ -350,57 +349,33 @@ class Player(PhysicsSprite):
         self.falling_left_frames = [self.spritesheet.parse_sprite("fallingl.png")]
         self.falling_right_frames = [self.spritesheet.parse_sprite("fallingr.png")]
 
-    def load_hat_character(self):
-        """Load the character frames for the player with a hat."""
+        if wear_hat:
+            self._apply_hat()
 
-        self.idle_left_frames = [
-            self.spritesheet.parse_sprite("idlel1.png"),
-            self.spritesheet.parse_sprite("idlel2.png"),
-        ]
-        self.idle_right_frames = [
-            self.spritesheet.parse_sprite("idler1.png"),
-            self.spritesheet.parse_sprite("idler2.png"),
-        ]
-        self.walk_left_frames = [
-            self.spritesheet.parse_sprite("wl1.png"),
-            self.spritesheet.parse_sprite("wl2.png"),
-            self.spritesheet.parse_sprite("wl3.png"),
-            self.spritesheet.parse_sprite("wl4.png"),
-        ]
-        self.walk_right_frames = [
-            self.spritesheet.parse_sprite("wr1.png"),
-            self.spritesheet.parse_sprite("wr2.png"),
-            self.spritesheet.parse_sprite("wr3.png"),
-            self.spritesheet.parse_sprite("wr4.png"),
-        ]
-        self.jumping_left_frames = [self.spritesheet.parse_sprite("jumpingl.png")]
-        self.jumping_right_frames = [self.spritesheet.parse_sprite("jumpingr.png")]
-        self.falling_left_frames = [self.spritesheet.parse_sprite("fallingl.png")]
-        self.falling_right_frames = [self.spritesheet.parse_sprite("fallingr.png")]
+    def _apply_hat(self):
+        """Blit the hat onto every animation frame.
 
-        for frame in self.idle_left_frames:
-            frame.blit(self.hat_image1, (0, -8))
-
-        for frame in self.idle_right_frames:
-            frame.blit(self.hat_image1, (10, -8))
-
-        for frame in self.walk_left_frames:
-            frame.blit(self.hat_image1, (0, -8))
-
-        for frame in self.walk_right_frames:
-            frame.blit(self.hat_image1, (10, -8))
-
-        for frame in self.jumping_left_frames:
-            frame.blit(self.hat_image1, (0, -8))
-
-        for frame in self.jumping_right_frames:
-            frame.blit(self.hat_image1, (10, -8))
-
-        for frame in self.falling_left_frames:
-            frame.blit(self.hat_image1, (0, -8))
-
-        for frame in self.falling_right_frames:
-            frame.blit(self.hat_image1, (10, -8))
+        Left-facing frames anchor the hat at x=0, right-facing at x=10, so it
+        tracks the character's head in both directions.
+        """
+        left_groups = (
+            self.idle_left_frames,
+            self.walk_left_frames,
+            self.jumping_left_frames,
+            self.falling_left_frames,
+        )
+        right_groups = (
+            self.idle_right_frames,
+            self.walk_right_frames,
+            self.jumping_right_frames,
+            self.falling_right_frames,
+        )
+        for group in left_groups:
+            for frame in group:
+                frame.blit(self.hat_image, (0, -8))
+        for group in right_groups:
+            for frame in group:
+                frame.blit(self.hat_image, (10, -8))
 
     def update_power_ups(self):
         """Update all active power-up timers"""
