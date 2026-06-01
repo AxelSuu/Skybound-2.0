@@ -31,6 +31,8 @@ from constants import (
     START_HEALTH,
     MAX_HEALTH,
     INVINCIBILITY_FRAMES,
+    COYOTE_FRAMES,
+    JUMP_BUFFER_FRAMES,
 )
 
 
@@ -125,7 +127,9 @@ class Player(PhysicsSprite):
         
         # Movement and physics state (pos/vel/acc, WIDTH, HEIGHT, ACC, FRICTION
         # are provided by PhysicsSprite).
-        self.jump_pressed = False        # Jump input state (prevents double-jumping)
+        self.jump_pressed = False        # Jump key state last frame (edge detection)
+        self.coyote_timer = 0            # Frames of grace to jump after leaving ground
+        self.jump_buffer_timer = 0       # Frames a pending jump press stays buffered
 
         # Load animation spritesheet
         self.spritesheet = Spritesheet("Playersheet.png")
@@ -200,29 +204,8 @@ class Player(PhysicsSprite):
             self.state = "moving"
             self.playerleft = False
 
-        # Enhanced jumping with double jump support
-        if keys[pg.K_SPACE] and not self.jump_pressed:
-            if self.on_floor and self.vel.y == 0:
-                # Regular jump
-                jump_strength = JUMP_VELOCITY
-                if self.jump_boost_timer > 0:
-                    jump_strength = JUMP_BOOST_VELOCITY  # Enhanced jump
-                self.vel.y = jump_strength
-                self.on_floor = False
-                self.jump_pressed = True
-                self.double_jump_used = False
-            elif (self.has_double_jump and not self.double_jump_used and 
-                  not self.on_floor and self.vel.y > -8):
-                # Double jump
-                jump_strength = JUMP_VELOCITY
-                if self.jump_boost_timer > 0:
-                    jump_strength = JUMP_BOOST_VELOCITY
-                self.vel.y = jump_strength
-                self.double_jump_used = True
-                self.jump_pressed = True
-
-        if not keys[pg.K_SPACE]:
-            self.jump_pressed = False
+        # Jumping with coyote time, jump buffering and double-jump support
+        self._update_jump(keys[pg.K_SPACE])
 
         if self.vel.y < 0:
             self.state = "jumping"
@@ -235,6 +218,53 @@ class Player(PhysicsSprite):
         # Friction-based motion + screen wrap + rect/hitbox sync (shared base).
         # The hitbox is inset (+10, +7) from the sprite rect.
         self.apply_physics(hitbox_dx=10, hitbox_dy=7)
+
+    def _update_jump(self, space_held):
+        """Resolve jumping with coyote time and jump buffering.
+
+        Args:
+            space_held (bool): whether the jump key is down this frame.
+
+        Coyote time lets the player jump for a few frames after walking off a
+        ledge; jump buffering remembers a press made just before landing so it
+        fires the instant the ground is touched. Both are classic platformer
+        "game feel" affordances. Double-jump (a power-up) is unchanged.
+        """
+        # Refresh the coyote window while genuinely resting on the ground.
+        if self.on_floor and self.vel.y == 0:
+            self.coyote_timer = COYOTE_FRAMES
+        elif self.coyote_timer > 0:
+            self.coyote_timer -= 1
+
+        # Buffer the jump press on the key-down edge, then let it decay.
+        space_pressed_edge = space_held and not self.jump_pressed
+        if space_pressed_edge:
+            self.jump_buffer_timer = JUMP_BUFFER_FRAMES
+        elif self.jump_buffer_timer > 0:
+            self.jump_buffer_timer -= 1
+
+        jump_strength = JUMP_BOOST_VELOCITY if self.jump_boost_timer > 0 else JUMP_VELOCITY
+
+        if self.jump_buffer_timer > 0 and self.coyote_timer > 0:
+            # Ground (or coyote-grace) jump.
+            self.vel.y = jump_strength
+            self.on_floor = False
+            self.coyote_timer = 0
+            self.jump_buffer_timer = 0
+            self.double_jump_used = False
+        elif (
+            space_pressed_edge
+            and self.has_double_jump
+            and not self.double_jump_used
+            and not self.on_floor
+            and self.vel.y > -8
+        ):
+            # Mid-air double jump (power-up). Requires a fresh press.
+            self.vel.y = jump_strength
+            self.double_jump_used = True
+
+        # Remember the key state for next-frame edge detection.
+        self.jump_pressed = space_held
 
     def animate(self):
         """Handle player animations based on the current state."""
