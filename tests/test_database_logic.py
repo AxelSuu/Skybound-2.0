@@ -89,3 +89,40 @@ def test_facade_gamestate_is_runtime_only(fresh_facade):
     db = fresh_facade
     db.SetGamestate("GAME")
     assert db.GetGamestate() == "GAME"
+
+
+def test_update_writes_many_keys_once(tmp_path):
+    path = tmp_path / "save.json"
+    sm = SaveManager(str(path))
+    sm.update({"score": 4, "coins": 99})
+    reloaded = SaveManager(str(path))
+    assert reloaded.get("score") == 4
+    assert reloaded.get("coins") == 99
+
+
+def test_add_increments_and_returns_total(tmp_path):
+    sm = SaveManager(str(tmp_path / "save.json"))
+    sm.set("coins", 10)
+    assert sm.add("coins", 5) == 15
+    assert sm.get("coins") == 15
+
+
+def test_reset_named_keys_only(tmp_path):
+    sm = SaveManager(str(tmp_path / "save.json"))
+    sm.update({"coins": 50, "score": 7, "highscore": 9})
+    sm.reset("coins", "score")
+    assert sm.get("coins") == 0
+    assert sm.get("score") == 1
+    assert sm.get("highscore") == 9  # untouched
+
+
+def test_reset_progress_keeps_settings(fresh_facade):
+    db = fresh_facade
+    sm = db.get_save_manager()
+    sm.set("settings", {"music_volume": 0.5})
+    db.SetCoins(50)
+    db.SetScore(7)
+    db.ResetProgress()
+    assert db.GetCoins() == 0
+    assert db.GetScore() == 1
+    assert sm.get("settings") == {"music_volume": 0.5}  # preserved

@@ -107,6 +107,7 @@ class Main_Loop:
 
         # Register music channels so settings volume/mute changes take effect immediately.
         from utils.sound_effects import sound_manager as _sm
+        self._sm = _sm
         _sm.music_channels = [self.channel1, self.channel3, self.channel4]
 
         # Restore persisted audio preferences (volumes / mute toggles).
@@ -182,6 +183,7 @@ class Main_Loop:
             if not isinstance(self.current_window, window_cls):
                 # Unpause this scene's music (unless globally muted), run the
                 # blocking scene, then pause its music when it returns.
+                self._sm.active_channel = channel
                 if not self.pause_music:
                     channel.unpause()
                 self.current_window = build_window()

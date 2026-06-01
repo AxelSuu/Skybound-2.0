@@ -20,7 +20,7 @@ Date: July 2025
 import pygame as pg
 import os
 from utils.spritesheet import Spritesheet
-from utils.database_logic import Hat
+from utils.database_logic import Hat, GetCoins, AddCoins
 from utils.player_stats import player_stats
 from utils.upgrades import apply_upgrades
 from sprites.base import PhysicsSprite
@@ -167,7 +167,6 @@ class Player(PhysicsSprite):
         self.magnet_timer = 0
         self.health = START_HEALTH
         self.max_health = MAX_HEALTH
-        self.coins = 0
         self.has_double_jump = False
         self.double_jump_used = False
         self.shield_active = False
@@ -459,10 +458,13 @@ class Player(PhysicsSprite):
         """Activate the coin magnet for a number of frames."""
         self.magnet_timer = max(self.magnet_timer, duration)
         
+    @property
+    def coins(self):
+        """The single coin wallet (shared with the shop, persisted in save.json)."""
+        return GetCoins()
+
     def add_coins(self, amount):
-        """Add coins to player"""
-        self.coins += amount
-        from utils.database_logic import AddCoins
+        """Add coins to the wallet."""
         AddCoins(amount)
         
     def take_damage(self):

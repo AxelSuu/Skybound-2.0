@@ -91,6 +91,16 @@ def SetCoins(coins):
 
 def AddCoins(amount):
     """Add coins to the running total and return the new total."""
-    new_total = GetCoins() + int(amount)
-    SetCoins(new_total)
-    return new_total
+    return int(get_save_manager().add("coins", int(amount)))
+
+
+def ResetProgress():
+    """Wipe all gameplay progress back to a fresh save.
+
+    Resets coins, score, level, highscore, cosmetics and upgrades to their
+    defaults while deliberately leaving audio ``settings`` and ``daily_bests``
+    untouched. Used by the main-menu Restart button.
+    """
+    get_save_manager().reset(
+        "score", "highscore", "level", "coins", "hat", "char", "upgrades"
+    )

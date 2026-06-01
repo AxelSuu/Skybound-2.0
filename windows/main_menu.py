@@ -36,9 +36,11 @@ from utils.database_logic import (
     manualSetHighScore,
     SelectedChar,
     Hat,
+    ResetProgress,
 )
 from utils.daily import set_active as set_daily_active, get_daily_best
 from utils.achievements import reset_all_achievements
+from utils.player_stats import player_stats
 
 
 class Main_menu:
@@ -178,10 +180,9 @@ class Main_menu:
                     if self.achievements_button.collidepoint(mouse_pos):
                         self.show_achievements()
                     if self.restart_button.collidepoint(mouse_pos):
-                        manualSetHighScore(0)
-                        SetHat("0")
-                        SetChar("0")
+                        ResetProgress()            # coins, score, level, highscore, hat, char, upgrades
                         reset_all_achievements()
+                        player_stats.reset_stats()  # clear in-memory run state
             keys = pg.key.get_pressed()
             if keys[pg.K_SPACE]:
                 main_menu = False

@@ -77,6 +77,7 @@ class SaveManager:
         elif self.txt_folder and os.path.isdir(self.txt_folder):
             self._migrate_from_txt()
             self.save()
+            self._cleanup_legacy_txt()
 
     def _migrate_from_txt(self):
         """One-time import of the legacy txts/*.txt save files."""
@@ -87,6 +88,15 @@ class SaveManager:
                     self.data[key] = cast(f.read().strip())
             except (OSError, ValueError):
                 pass  # keep the default for this field
+
+    def _cleanup_legacy_txt(self):
+        """Delete imported legacy txt files so they can't masquerade as a
+        second source of truth. Runs once, only after a successful migration."""
+        for fname, _cast in _LEGACY_TXT.values():
+            try:
+                os.remove(os.path.join(self.txt_folder, fname))
+            except OSError:
+                pass  # already gone or unreadable -> nothing to clean
 
     def save(self):
         """Atomically persist the current data to disk."""
@@ -101,11 +111,31 @@ class SaveManager:
             if "tmp_path" in dir() and os.path.exists(tmp_path):
                 os.remove(tmp_path)
 
-    def get(self, key):
-        return self.data.get(key, DEFAULTS.get(key))
+    def get(self, key, default=None):
+        if key in self.data:
+            return self.data[key]
+        return default if default is not None else DEFAULTS.get(key)
 
     def set(self, key, value):
         self.data[key] = value
+        self.save()
+
+    def update(self, mapping):
+        """Set several keys at once, persisting with a single write."""
+        self.data.update(mapping)
+        self.save()
+
+    def add(self, key, amount):
+        """Atomically increment a numeric field and return the new total."""
+        new_total = self.get(key) + amount
+        self.set(key, new_total)
+        return new_total
+
+    def reset(self, *keys):
+        """Reset the named keys to their defaults (no args = all of them)."""
+        targets = keys if keys else DEFAULTS.keys()
+        for key in targets:
+            self.data[key] = copy.deepcopy(DEFAULTS[key])
         self.save()
 
 

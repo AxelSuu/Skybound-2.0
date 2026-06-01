@@ -1,5 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+from PyInstaller.utils.hooks import collect_all
+
 block_cipher = None
 
 # Define all game assets
@@ -11,12 +13,19 @@ added_files = [
     ('txts/*.txt', 'txts')
 ]
 
+# Force-collect numpy in full. PyInstaller's static analysis misses some of
+# numpy's lazily-imported submodules (e.g. numpy._core._exceptions, pulled in by
+# the multiarray C-extension stub), which makes the frozen numpy fail to import
+# its C-extensions at runtime. collect_all bundles every submodule, data file,
+# and shared library so numpy initializes correctly.
+numpy_datas, numpy_binaries, numpy_hiddenimports = collect_all('numpy')
+
 a = Analysis(
     ['main.py'],
     pathex=[],
-    binaries=[],
-    datas=added_files,
-    hiddenimports=['pygame'],
+    binaries=[('/usr/lib/x86_64-linux-gnu/libpython3.12.so.1.0', '.')] + numpy_binaries,
+    datas=added_files + numpy_datas,
+    hiddenimports=['pygame'] + numpy_hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
