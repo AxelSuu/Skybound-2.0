@@ -304,6 +304,14 @@ class AchievementManager:
         """Get total rewards earned from achievements"""
         return sum(ach.reward for ach in self.achievements.values() if ach.unlocked)
 
+    def reset(self):
+        """Reset all achievements to locked state and save."""
+        for achievement in self.achievements.values():
+            achievement.unlocked = False
+            achievement.progress = 0
+            achievement.unlock_date = None
+        self.save_achievements()
+
 
 # Global achievement manager instance
 achievement_manager = AchievementManager()
@@ -376,3 +384,8 @@ def get_completion_percentage():
 def get_total_rewards_earned():
     """Get total rewards earned"""
     return achievement_manager.get_total_rewards_earned()
+
+
+def reset_all_achievements():
+    """Reset all achievements to locked state (call on game restart)."""
+    achievement_manager.reset()

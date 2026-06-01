@@ -38,6 +38,7 @@ from utils.database_logic import (
     Hat,
 )
 from utils.daily import set_active as set_daily_active, get_daily_best
+from utils.achievements import reset_all_achievements
 
 
 class Main_menu:
@@ -109,6 +110,8 @@ class Main_menu:
         ).convert()
         self.background2 = pg.transform.flip(self.background, True, False).convert()
         pg.display.set_icon(icon)
+        # Unified button width to match character selection buttons
+        self.BUTTON_WIDTH = 200
         self.main_menu()
 
     def main_menu(self):
@@ -156,7 +159,7 @@ class Main_menu:
                 self.HEIGHT * 3 / 4 + 60,
             )
             draw_text(self.screen, "Settings", 22, self.WIDTH / 2, 540)
-            draw_text(self.screen, "Achievements", 22, self.WIDTH / 2, 570)
+            draw_text(self.screen, "Achievements", 22, self.WIDTH / 2, 580)
             draw_text(self.screen, "Restart", 22, self.WIDTH / 2, 40)
 
             # Event handler
@@ -178,6 +181,7 @@ class Main_menu:
                         manualSetHighScore(0)
                         SetHat("0")
                         SetChar("0")
+                        reset_all_achievements()
             keys = pg.key.get_pressed()
             if keys[pg.K_SPACE]:
                 main_menu = False
@@ -186,19 +190,13 @@ class Main_menu:
             # Draw buttons block
             # Text positions: Shop (440), Character (475), Settings (540), Achievements (570), Restart (40)
             # Button rects should be centered on text (text_y - 15 for 30px height buttons)
-            self.shop_button = pg.Rect(
-                self.WIDTH / 2 - 50, 425, 100, 30
-            )
-            self.character_button = pg.Rect(
-                self.WIDTH / 2 - 100, 460, 200, 30
-            )
-            self.settings_button = pg.Rect(
-                self.WIDTH / 2 - 50, 525, 100, 30
-            )
-            self.achievements_button = pg.Rect(
-                self.WIDTH / 2 - 80, 555, 160, 30
-            )
-            self.restart_button = pg.Rect(self.WIDTH / 2 - 50, 25, 100, 30)
+            bw = self.BUTTON_WIDTH
+            hw = bw / 2
+            self.shop_button = pg.Rect(self.WIDTH / 2 - hw, 425, bw, 30)
+            self.character_button = pg.Rect(self.WIDTH / 2 - hw, 460, bw, 30)
+            self.settings_button = pg.Rect(self.WIDTH / 2 - hw, 525, bw, 30)
+            self.achievements_button = pg.Rect(self.WIDTH / 2 - hw, 565, bw, 30)
+            self.restart_button = pg.Rect(self.WIDTH / 2 - hw, 25, bw, 30)
             pg.draw.rect(self.screen, self.BLACK, self.shop_button, 2)
             pg.draw.rect(self.screen, self.BLACK, self.character_button, 2)
             pg.draw.rect(self.screen, self.BLACK, self.settings_button, 2)
@@ -234,12 +232,10 @@ class Main_menu:
             )
 
             # Draw untouched buttons
-            self.hat_button = pg.Rect(
-                self.WIDTH / 2 - 50, self.HEIGHT / 2 - 10, 100, 30
-            )
-            self.normal_button = pg.Rect(
-                self.WIDTH / 2 - 50, self.HEIGHT / 2 + 40, 100, 30
-            )
+            bw = getattr(self, 'BUTTON_WIDTH', 100)
+            hw = bw / 2
+            self.hat_button = pg.Rect(self.WIDTH / 2 - hw, self.HEIGHT / 2 - 10, bw, 30)
+            self.normal_button = pg.Rect(self.WIDTH / 2 - hw, self.HEIGHT / 2 + 40, bw, 30)
 
             # Logic for drawing touched buttons
             selected_char = SelectedChar()
@@ -247,9 +243,9 @@ class Main_menu:
                 pg.draw.rect(self.screen, self.BLUE, self.normal_button)
                 pg.draw.rect(self.screen, self.BLACK, self.hat_button, 2)
                 draw_text(
-                    self.screen, "Normal", 22, self.WIDTH / 2, self.HEIGHT / 2 + 40
+                    self.screen, "Normal", 22, self.WIDTH / 2, self.HEIGHT / 2 + 53
                 )
-                draw_text(self.screen, "Hat", 22, self.WIDTH / 2, self.HEIGHT / 2 - 10)
+                draw_text(self.screen, "Hat", 22, self.WIDTH / 2, self.HEIGHT / 2 + 3)
                 self.screen.blit(
                     normal_image, (self.WIDTH / 2 + 100, self.HEIGHT / 2 - 50)
                 )
@@ -258,9 +254,9 @@ class Main_menu:
                 pg.draw.rect(self.screen, self.BLUE, self.hat_button)
                 pg.draw.rect(self.screen, self.BLACK, self.normal_button, 2)
                 draw_text(
-                    self.screen, "Normal", 22, self.WIDTH / 2, self.HEIGHT / 2 + 40
+                    self.screen, "Normal", 22, self.WIDTH / 2, self.HEIGHT / 2 + 53
                 )
-                draw_text(self.screen, "Hat", 22, self.WIDTH / 2, self.HEIGHT / 2 - 10)
+                draw_text(self.screen, "Hat", 22, self.WIDTH / 2, self.HEIGHT / 2 + 3)
                 self.screen.blit(
                     hat_character, (self.WIDTH / 2 + 100, self.HEIGHT / 2 - 50)
                 )
@@ -269,9 +265,9 @@ class Main_menu:
                 pg.draw.rect(self.screen, self.BLACK, self.hat_button, 2)
                 pg.draw.rect(self.screen, self.BLACK, self.normal_button, 2)
                 draw_text(
-                    self.screen, "Normal", 22, self.WIDTH / 2, self.HEIGHT / 2 + 40
+                    self.screen, "Normal", 22, self.WIDTH / 2, self.HEIGHT / 2 + 53
                 )
-                draw_text(self.screen, "Hat", 22, self.WIDTH / 2, self.HEIGHT / 2 - 10)
+                draw_text(self.screen, "Hat", 22, self.WIDTH / 2, self.HEIGHT / 2 + 3)
 
             # event handler
             for event in pg.event.get():
