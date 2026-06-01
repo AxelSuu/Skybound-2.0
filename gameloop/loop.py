@@ -351,7 +351,9 @@ class Loop():
         # Draw sprites with shake offset. Anchor each image by its midbottom so
         # the player's squash/stretch (which scales image but not rect) stays
         # planted; for every other sprite image size == rect size, so this is
-        # identical to a topleft blit.
+        # identical to a topleft blit. The whole batch is drawn in one
+        # pygame-ce fblits() call rather than N Python-level blit() calls.
+        sprite_blits = []
         for sprite in self.all_sprites:
             sprite_rect = sprite.rect.copy()
             sprite_rect.x += shake_offset[0]
@@ -363,7 +365,9 @@ class Loop():
                 continue
 
             blit_rect = sprite.image.get_rect(midbottom=sprite_rect.midbottom)
-            self.screen.blit(sprite.image, blit_rect)
+            sprite_blits.append((sprite.image, blit_rect))
+
+        self.screen.fblits(sprite_blits)
             
         # Draw power-ups
         self.powerup_manager.draw(self.screen)
