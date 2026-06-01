@@ -387,10 +387,10 @@ class Player(PhysicsSprite):
         )
         for group in left_groups:
             for frame in group:
-                frame.blit(hat_img, (0, -8))
+                frame.blit(hat_img, (8, -8))
         for group in right_groups:
             for frame in group:
-                frame.blit(hat_img, (10, -8))
+                frame.blit(hat_img, (18, -8))
 
     def update_power_ups(self):
         """Update all active power-up timers"""

@@ -270,12 +270,16 @@ class AchievementManager:
             pass  # Ignore save errors
             
     def check_achievement(self, achievement_id, current_value):
-        """Check if an achievement should be unlocked"""
+        """Check if an achievement should be unlocked, granting its coin reward if so."""
         if achievement_id in self.achievements:
             was_unlocked = self.achievements[achievement_id].check_unlock(current_value)
             if was_unlocked:
                 self.save_achievements()
-                return self.achievements[achievement_id]
+                achievement = self.achievements[achievement_id]
+                if achievement.reward > 0:
+                    from utils.database_logic import AddCoins
+                    AddCoins(achievement.reward)
+                return achievement
         return None
         
     def get_achievement(self, achievement_id):

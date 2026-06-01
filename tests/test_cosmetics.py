@@ -166,3 +166,48 @@ def test_reset_progress_clears_cosmetics():
     assert gh() == "none"
     assert owned_skins() == [0]
     assert owned_hats() == ["none"]
+
+
+# ---------------------------------------------------------------------------
+# Achievement reward coins granted on hat purchase
+# ---------------------------------------------------------------------------
+
+def test_hat_purchase_triggers_hat_collector_achievement():
+    """Buying any hat should unlock the hat_collector achievement (if not already done)."""
+    import utils.database_logic as db
+    from utils.achievements import achievement_manager
+
+    db.SetCoins(100)
+    # Reset the achievement so the test is repeatable regardless of order.
+    ach = achievement_manager.achievements.get("hat_collector")
+    if ach:
+        ach.unlocked = False
+        ach.progress = 0
+
+    # The shop's _handle_hat calls check_hat_achievement() after buy_hat().
+    # We invoke the same flow manually here.
+    from utils.cosmetics import buy_hat
+    from utils.achievements import check_hat_achievement
+
+    assert buy_hat("cap") is True
+    check_hat_achievement()
+    assert achievement_manager.achievements["hat_collector"].unlocked is True
+
+
+def test_achievement_reward_coins_granted():
+    """Unlocking an achievement with a non-zero reward must add coins to the wallet."""
+    import utils.database_logic as db
+    from utils.achievements import achievement_manager
+
+    db.SetCoins(0)
+    ach = achievement_manager.achievements.get("first_level")
+    assert ach is not None
+    # Reset so it can be unlocked again.
+    ach.unlocked = False
+    ach.progress = 0
+    reward = ach.reward  # 5 coins
+
+    result = achievement_manager.check_achievement("first_level", 1)
+    assert result is not None
+    assert result.unlocked is True
+    assert db.GetCoins() == reward

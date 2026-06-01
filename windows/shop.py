@@ -233,5 +233,7 @@ class Shop:
             self.message = f"Equipped {cosm.HATS[hat_id]['name']} hat!"
         elif cosm.buy_hat(hat_id):
             self.message = f"Unlocked {cosm.HATS[hat_id]['name']} hat!"
+            from utils.achievements import check_hat_achievement
+            check_hat_achievement()
         else:
             self.message = "Not enough coins!"

@@ -28,7 +28,10 @@ from utils.effects import EffectsManager
 from utils.sound_effects import (
     play_land_sound, play_victory_sound, play_damage_sound, play_coin_sound,
 )
-from utils.achievements import check_level_achievement, check_coin_achievement, check_no_damage_achievement
+from utils.achievements import (
+    check_level_achievement, check_coin_achievement,
+    check_no_damage_achievement, check_enemy_achievement,
+)
 from utils.player_stats import player_stats
 from sprites.powerups import PowerUpManager
 from windows.paus import Pause
@@ -119,6 +122,7 @@ class Loop():
         # (startgame() blocks in run() until the level ends, so it must be
         # called exactly once — the previous double-call ran the game twice.)
         self.total_coins_collected = 0
+        self.total_mob_encounters = 0  # lifetime mob-collision count for achievements
         self.init_pygame()
         self.startgame()
 
@@ -251,6 +255,10 @@ class Loop():
                 self.effects_manager.add_floating_text(
                     WIDTH / 2, 100, f"Achievement: {achievement.name}!", (255, 215, 0)
                 )
+                if achievement.reward > 0:
+                    self.effects_manager.add_floating_text(
+                        WIDTH / 2, 120, f"+{achievement.reward} coins!", (255, 215, 0)
+                    )
 
         SetHighScore(GetScore())
         player_stats.save_stats(self.player)
@@ -277,6 +285,13 @@ class Loop():
             self.effects_manager.add_floating_text(
                 self.player.pos.x, self.player.pos.y - 20, "OUCH!", (255, 0, 0)
             )
+            # Track enemy encounters for the Monster Slayer achievement.
+            self.total_mob_encounters += 1
+            enemy_achievement = check_enemy_achievement(self.total_mob_encounters)
+            if enemy_achievement:
+                self.effects_manager.add_floating_text(
+                    WIDTH / 2, 140, f"Achievement: {enemy_achievement.name}!", (255, 215, 0)
+                )
 
         if self.player.is_dead():
             self._player_died()
@@ -317,6 +332,10 @@ class Loop():
                         self.effects_manager.add_floating_text(
                             WIDTH / 2, 120, f"Achievement: {achievement.name}!", (255, 215, 0)
                         )
+                        if achievement.reward > 0:
+                            self.effects_manager.add_floating_text(
+                                WIDTH / 2, 140, f"+{achievement.reward} coins!", (255, 215, 0)
+                            )
                 self.effects_manager.add_floating_text(
                     powerup.pos.x, powerup.pos.y - 20, f"+{powerup.value}", (255, 215, 0)
                 )

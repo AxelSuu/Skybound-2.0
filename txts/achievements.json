@@ -3,7 +3,7 @@
     "id": "first_level",
     "unlocked": true,
     "progress": 1,
-    "unlock_date": "2026-06-01 16:22:08"
+    "unlock_date": "2026-06-01 20:28:50"
   },
   {
     "id": "level_5",
@@ -67,8 +67,8 @@
   },
   {
     "id": "hat_collector",
-    "unlocked": false,
-    "progress": 0,
-    "unlock_date": null
+    "unlocked": true,
+    "progress": 1,
+    "unlock_date": "2026-06-01 20:28:50"
   }
 ]

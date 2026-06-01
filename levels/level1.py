@@ -245,6 +245,10 @@ class LevelClass:
         # Pick the biome for this level and bake its tint onto the background.
         self.theme = theme_for_level(current_level)
         self.sky = apply_tint(self._load_sky(self.theme["sky"]), self.theme["tint"])
+        # Platform tint: same hue as the sky but half-strength alpha so the
+        # tile texture stays clearly readable.
+        raw_tint = self.theme["tint"]
+        self._plat_tint = (*raw_tint[:3], raw_tint[3] // 2) if raw_tint else None
         self.game.all_sprites = pg.sprite.Group()
         self.game.platforms = pg.sprite.Group()
         self.game.goals = pg.sprite.Group()
@@ -266,7 +270,7 @@ class LevelClass:
         self.game.mobs = pg.sprite.Group()
 
         # Create floor Platform
-        p1 = Platform2(0, self.HEIGHT - 40, self.WIDTH, 40)
+        p1 = Platform2(0, self.HEIGHT - 40, self.WIDTH, 40, tint=self._plat_tint)
         self.game.all_sprites.add(p1)
         self.game.platforms.add(p1)
 
@@ -280,7 +284,7 @@ class LevelClass:
         )
         platforms = []
         for r in platform_rects:
-            platform = Platform2(r.x, r.y, r.width, r.height)
+            platform = Platform2(r.x, r.y, r.width, r.height, tint=self._plat_tint)
             platforms.append(platform)
             self.game.all_sprites.add(platform)
             self.game.platforms.add(platform)

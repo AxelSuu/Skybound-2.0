@@ -207,41 +207,66 @@ class Main_menu:
     def show_character_selection(self):
         """Cosmetics selection screen — choose skin and hat from owned items.
 
-        Items are displayed as a compact grid:
-          - Skins section: one button per owned skin (unowned greyed out).
-          - Hats section:  one button per owned hat  (unowned greyed out).
-
-        Only owned items can be equipped; unowned ones show "Buy in Shop" to
-        guide the player toward the shop.
+        Layout:
+          - Skins row: one button per skin (gold = equipped, green = owned, grey = locked).
+          - Hats row:  one button per hat.
+          - Live preview: a 3× scaled idle frame of the current skin + hat,
+            refreshed whenever the selection changes.
         """
         from utils.cosmetics import (
             SKINS, HATS, owned_skins, owned_hats,
             get_skin, set_skin, get_hat, set_hat,
         )
+        from utils.spritesheet import Spritesheet
 
         GOLD = (255, 215, 0)
         GREY = (160, 160, 160)
         GREEN = (60, 180, 75)
 
-        # Buttons are rebuilt each frame so clicks always see fresh positions.
+        def _build_preview(skin_idx, hat_id):
+            """Return a 3× idle frame for the given skin + hat combination."""
+            spec = SKINS[skin_idx]
+            if skin_idx == 0:
+                sheet = Spritesheet(spec["sheet"])
+            else:
+                sheet = Spritesheet(spec["sheet"], meta_filename="Playersheet.json")
+            frame = sheet.parse_sprite("idlel1.png").copy()
+            hat_spec = HATS.get(hat_id)
+            if hat_spec and hat_spec["file"] is not None:
+                hat_img = pg.image.load(
+                    os.path.join(self.img_folder_path, hat_spec["file"])
+                ).convert_alpha()
+                frame.blit(hat_img, (8, -8))
+            return frame
+
         skin_buttons = []
         hat_buttons = []
 
+        # Load initial preview; refresh when selection changes.
+        prev_skin = get_skin()
+        prev_hat = get_hat()
+        preview = _build_preview(prev_skin, prev_hat)
+
         active = True
         while active:
+            current_skin = get_skin()
+            current_hat = get_hat()
+
+            # Refresh preview on any selection change.
+            if current_skin != prev_skin or current_hat != prev_hat:
+                preview = _build_preview(current_skin, current_hat)
+                prev_skin, prev_hat = current_skin, current_hat
+
             self.screen.fill(self.LIGHTBLUE)
             draw_text(self.screen, "Character Selection", 36, self.WIDTH / 2, 28)
             draw_text(self.screen, "Press ESC to return", 16, self.WIDTH / 2, self.HEIGHT - 18)
 
             owned_s = owned_skins()
             owned_h = owned_hats()
-            current_skin = get_skin()
-            current_hat = get_hat()
-
             skin_buttons = []
             hat_buttons = []
 
-            # ---- Skins ----
+            # ---- Skins row ----
             draw_text(self.screen, "Skins", 22, self.WIDTH / 2, 60)
             btn_w, btn_h = 80, 28
             skin_ids = list(SKINS.keys())
@@ -264,7 +289,7 @@ class Main_menu:
                 skin_buttons.append((btn, idx, is_owned))
                 sx += btn_w + 8
 
-            # ---- Hats ----
+            # ---- Hats row ----
             draw_text(self.screen, "Hats", 22, self.WIDTH / 2, 130)
             hat_ids = list(HATS.keys())
             total_w_h = len(hat_ids) * (btn_w + 8) - 8
@@ -286,14 +311,17 @@ class Main_menu:
                 hat_buttons.append((btn, hat_id, is_owned))
                 hx += btn_w + 8
 
+            # ---- Live preview (centred below the hat row) ----
+            preview_rect = preview.get_rect(centerx=self.WIDTH // 2, top=195)
+            self.screen.blit(preview, preview_rect)
+
             # ---- Legend ----
-            legend_y = 200
-            draw_text(self.screen, "Gold = Equipped", 14, self.WIDTH / 2, legend_y,
-                      color=GOLD)
+            legend_y = preview_rect.bottom + 12
+            draw_text(self.screen, "Gold = Equipped", 14, self.WIDTH / 2, legend_y, color=GOLD)
             draw_text(self.screen, "Green = Owned  /  Grey = Buy in Shop", 14,
                       self.WIDTH / 2, legend_y + 18)
 
-            # ---- Event handling ----
+            # ---- Events ----
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     active = False
