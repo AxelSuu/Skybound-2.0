@@ -167,7 +167,7 @@ class Loop():
             return
 
         self.all_sprites.update()
-        self.powerup_manager.update(self.platforms)
+        self.powerup_manager.update(self.platforms, self.player)
         self.handle_collisions()
         
         # Update mob AI with player position
