@@ -105,6 +105,10 @@ class Main_Loop:
         # Set global volume level
         pg.mixer.music.set_volume(0.4)
 
+        # Register music channels so settings volume/mute changes take effect immediately.
+        from utils.sound_effects import sound_manager as _sm
+        _sm.music_channels = [self.channel1, self.channel3, self.channel4]
+
         # Restore persisted audio preferences (volumes / mute toggles).
         from utils.settings_store import load_and_apply
         load_and_apply()

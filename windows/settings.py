@@ -175,13 +175,7 @@ class Settings:
                     # Check music toggle
                     elif music_toggle_rect.collidepoint(mouse_x, mouse_y):
                         self.music_enabled = not self.music_enabled
-                        sound_manager.music_enabled = self.music_enabled
-                        if self.music_enabled:
-                            # Resume music logic would go here
-                            pass
-                        else:
-                            # Pause music logic would go here
-                            pass
+                        sound_manager.toggle_music()
                             
                 elif event.type == pg.MOUSEMOTION:
                     # Allow dragging on sliders

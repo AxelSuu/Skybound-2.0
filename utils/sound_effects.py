@@ -83,6 +83,8 @@ class SoundManager:
         if not pg.mixer.get_init():
             pg.mixer.init()
             
+        self.music_channels = []   # pygame.mixer.Channel objects; registered by Main_Loop
+
         # Create procedural sound effects
         self.create_sound_effects()
         
@@ -242,21 +244,24 @@ class SoundManager:
             sound.set_volume(self.sfx_volume)
             
     def set_music_volume(self, volume):
-        """Set music volume (0.0 to 1.0)"""
+        """Set music volume (0.0 to 1.0) on all registered channels."""
         self.music_volume = max(0.0, min(1.0, volume))
         pg.mixer.music.set_volume(self.music_volume)
+        for channel in self.music_channels:
+            channel.set_volume(self.music_volume)
         
     def toggle_sfx(self):
         """Toggle sound effects on/off"""
         self.sfx_enabled = not self.sfx_enabled
         
     def toggle_music(self):
-        """Toggle music on/off"""
+        """Toggle music on/off across all registered channels."""
         self.music_enabled = not self.music_enabled
-        if self.music_enabled:
-            pg.mixer.music.unpause()
-        else:
-            pg.mixer.music.pause()
+        for channel in self.music_channels:
+            if self.music_enabled:
+                channel.unpause()
+            else:
+                channel.pause()
             
     def load_external_sound(self, sound_name, file_path):
         """Load an external sound file"""
