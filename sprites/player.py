@@ -22,6 +22,17 @@ import os
 from utils.spritesheet import Spritesheet
 from utils.database_logic import Hat
 from utils.player_stats import player_stats
+from constants import (
+    WIDTH,
+    HEIGHT,
+    PLAYER_ACC,
+    FRICTION,
+    JUMP_VELOCITY,
+    JUMP_BOOST_VELOCITY,
+    START_HEALTH,
+    MAX_HEALTH,
+    INVINCIBILITY_FRAMES,
+)
 
 
 class Player(pg.sprite.Sprite):
@@ -117,12 +128,12 @@ class Player(pg.sprite.Sprite):
         self.jump_pressed = False        # Jump input state (prevents double-jumping)
         
         # Screen dimensions for boundary checking
-        self.WIDTH = 480
-        self.HEIGHT = 600
-        
+        self.WIDTH = WIDTH
+        self.HEIGHT = HEIGHT
+
         # Physics constants
-        self.PLAYER_ACC = 0.5            # Player acceleration rate
-        self.PLAYER_FRICTION = -0.12     # Friction/deceleration rate
+        self.PLAYER_ACC = PLAYER_ACC     # Player acceleration rate
+        self.PLAYER_FRICTION = FRICTION  # Friction/deceleration rate
         
         # Load animation spritesheet
         self.spritesheet = Spritesheet("Playersheet.png")
@@ -156,8 +167,8 @@ class Player(pg.sprite.Sprite):
         self.jump_boost_timer = 0
         self.shield_timer = 0
         self.double_jump_timer = 0
-        self.health = 3
-        self.max_health = 5
+        self.health = START_HEALTH
+        self.max_health = MAX_HEALTH
         self.coins = 0
         self.has_double_jump = False
         self.double_jump_used = False
@@ -169,7 +180,7 @@ class Player(pg.sprite.Sprite):
         
         # Invincibility frames
         self.invincible_timer = 0
-        self.invincible_duration = 120  # 2 seconds at 60 FPS (120 frames)
+        self.invincible_duration = INVINCIBILITY_FRAMES  # ~2 seconds at 60 FPS
 
     def update(self):
         """Update the player's position, state, and animations."""
@@ -203,9 +214,9 @@ class Player(pg.sprite.Sprite):
         if keys[pg.K_SPACE] and not self.jump_pressed:
             if self.on_floor and self.vel.y == 0:
                 # Regular jump
-                jump_strength = -12
+                jump_strength = JUMP_VELOCITY
                 if self.jump_boost_timer > 0:
-                    jump_strength = -16  # Enhanced jump
+                    jump_strength = JUMP_BOOST_VELOCITY  # Enhanced jump
                 self.vel.y = jump_strength
                 self.on_floor = False
                 self.jump_pressed = True
@@ -213,9 +224,9 @@ class Player(pg.sprite.Sprite):
             elif (self.has_double_jump and not self.double_jump_used and 
                   not self.on_floor and self.vel.y > -8):
                 # Double jump
-                jump_strength = -12
+                jump_strength = JUMP_VELOCITY
                 if self.jump_boost_timer > 0:
-                    jump_strength = -16
+                    jump_strength = JUMP_BOOST_VELOCITY
                 self.vel.y = jump_strength
                 self.double_jump_used = True
                 self.jump_pressed = True

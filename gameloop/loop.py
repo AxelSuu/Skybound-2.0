@@ -28,12 +28,9 @@ from utils.achievements import check_level_achievement, check_coin_achievement, 
 from sprites.powerups import PowerUpManager
 from windows.paus import Pause
 
-# Game Configuration Constants
-WIDTH : int = 480              # Screen width in pixels
-HEIGHT : int = 600             # Screen height in pixels  
-FPS : int = 100                # Target frames per second (high for smooth gameplay)
-TITLE : str = "Skybound"       # Window title
-WHITE : tuple = (255, 255, 255) # RGB color tuple for white
+# Game configuration constants (see constants.py for the shared source of truth)
+from constants import WIDTH, HEIGHT, FPS, TITLE, WHITE
+
 IMG_FOLDER_PATH : str = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "imgs"))
 
 class Loop():

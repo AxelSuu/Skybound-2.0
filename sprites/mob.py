@@ -1,6 +1,7 @@
 import pygame as pg
 import os
 from utils.spritesheet import Spritesheet
+from constants import WIDTH, HEIGHT, MOB_ACC, MOB_FRICTION
 
 """ Class for mob sprite, using pg.sprite.Sprite
     Very based on player sprite"""
@@ -12,10 +13,10 @@ class Mob(pg.sprite.Sprite):
         self.img_folder_path = os.path.abspath(
             os.path.join(os.path.dirname(__file__), "..", "imgs")
         )
-        self.HEIGHT = 600
-        self.WIDTH = 480
-        self.MOB_ACC = 0.5
-        self.MOB_FRICTION = -0.12
+        self.HEIGHT = HEIGHT
+        self.WIDTH = WIDTH
+        self.MOB_ACC = MOB_ACC
+        self.MOB_FRICTION = MOB_FRICTION
 
         # Load the spritesheet
         self.spritesheet = Spritesheet("Mobsheet.png")
