@@ -185,7 +185,7 @@ class Player(PhysicsSprite):
     def update(self):
         """Update the player's position, state, and animations."""
 
-        self.acc = pg.Vector2(0, self.ACC if not self.on_floor else 0)
+        self.acc = pg.Vector2(0, self.ACC)
         self.animation_timer += 1
         
         # Update power-up timers

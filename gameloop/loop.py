@@ -191,15 +191,10 @@ class Loop():
         self.player_was_on_floor = self.player.on_floor
 
     def handle_collisions(self):
-        # Reset grounded state; collision checks below re-set it to True if needed.
-        self.player.on_floor = False
-        for mob in self.mobs:
-            mob.on_floor = False
-
         # Player platform collision
         hits = pg.sprite.spritecollide(self.player, self.platforms, False)
         if hits and self.player.vel.y >= 0:
-            self.player.pos.y = hits[0].rect.top - 1
+            self.player.pos.y = hits[0].rect.top
             self.player.vel.y = 0
             self.player.on_floor = True
 
@@ -207,7 +202,7 @@ class Loop():
         for mob in self.mobs:
             hits2 = pg.sprite.spritecollide(mob, self.platforms, False)
             if hits2 and  mob.vel.y >= 0:
-                mob.pos.y = hits2[0].rect.top -1
+                mob.pos.y = hits2[0].rect.top
                 mob.vel.y = 0
                 mob.on_floor = True
 

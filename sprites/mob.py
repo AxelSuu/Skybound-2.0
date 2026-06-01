@@ -39,7 +39,7 @@ class Mob(PhysicsSprite):
         )
 
     def update(self, player_pos=None):
-        self.acc = pg.Vector2(0, self.ACC if not self.on_floor else 0)
+        self.acc = pg.Vector2(0, self.ACC)
 
         self.animation_timer += 2
 
