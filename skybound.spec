@@ -20,10 +20,25 @@ added_files = [
 # and shared library so numpy initializes correctly.
 numpy_datas, numpy_binaries, numpy_hiddenimports = collect_all('numpy')
 
+import sys
+import sysconfig
+import os
+
+# On Linux, PyInstaller needs libpython bundled explicitly.
+# Detect dynamically so the spec works on any Python version / arch.
+# On Windows, PyInstaller's built-in hooks handle pythonXY.dll automatically.
+if sys.platform.startswith('linux'):
+    _libdir = sysconfig.get_config_var('LIBDIR') or ''
+    _ldlib  = sysconfig.get_config_var('LDLIBRARY') or ''
+    _libpath = os.path.join(_libdir, _ldlib)
+    libpython_binaries = [(_libpath, '.')] if os.path.isfile(_libpath) else []
+else:
+    libpython_binaries = []
+
 a = Analysis(
     ['main.py'],
     pathex=[],
-    binaries=[('/usr/lib/x86_64-linux-gnu/libpython3.12.so.1.0', '.')] + numpy_binaries,
+    binaries=libpython_binaries + numpy_binaries,
     datas=added_files + numpy_datas,
     hiddenimports=['pygame'] + numpy_hiddenimports,
     hookspath=[],
