@@ -175,9 +175,10 @@ class Loop():
         # Check for landing effects
         if not self.player_was_on_floor and self.player.on_floor:
             self.effects_manager.create_landing_dust(
-                self.player.pos.x, self.player.pos.y, 
+                self.player.pos.x, self.player.pos.y,
                 self.player.vel.x * 0.5
             )
+            self.player.land()  # squash on touchdown
             play_land_sound()
             
         self.player_was_on_floor = self.player.on_floor
@@ -340,18 +341,22 @@ class Loop():
             bg2_y = 0 + shake_offset[1]
             self.screen.blit(self.background2, (bg2_x, bg2_y))
             
-        # Draw sprites with shake offset
+        # Draw sprites with shake offset. Anchor each image by its midbottom so
+        # the player's squash/stretch (which scales image but not rect) stays
+        # planted; for every other sprite image size == rect size, so this is
+        # identical to a topleft blit.
         for sprite in self.all_sprites:
             sprite_rect = sprite.rect.copy()
             sprite_rect.x += shake_offset[0]
             sprite_rect.y += shake_offset[1]
-            
+
             # Handle player invincibility flashing
             if sprite == self.player and self.player.should_flash():
                 # Skip drawing the player when flashing
                 continue
-            
-            self.screen.blit(sprite.image, sprite_rect)
+
+            blit_rect = sprite.image.get_rect(midbottom=sprite_rect.midbottom)
+            self.screen.blit(sprite.image, blit_rect)
             
         # Draw power-ups
         self.powerup_manager.draw(self.screen)

@@ -78,3 +78,36 @@ def test_held_key_does_not_auto_rejump_in_air():
     p.vel.y = -5
     p._update_jump(space_held=True)
     assert p.vel.y == -5
+
+
+def test_ground_jump_triggers_stretch():
+    p = Player()
+    _grounded(p)
+    p._update_jump(space_held=True)
+    assert p.squash < 0  # negative = stretch on take-off
+
+
+def test_landing_triggers_squash():
+    p = Player()
+    p.land()
+    assert p.squash > 0  # positive = squash on touchdown
+
+
+def test_squash_decays_back_to_neutral():
+    p = Player()
+    p.land()
+    # Apply over enough frames and it eases back to exactly zero.
+    for _ in range(40):
+        p._apply_squash()
+    assert p.squash == 0.0
+
+
+def test_squash_deforms_the_rendered_image():
+    p = Player()
+    base_size = p.image.get_size()
+    p.land()  # squash -> wider, shorter
+    p._apply_squash()
+    new_size = p.image.get_size()
+    assert new_size != base_size
+    assert new_size[0] >= base_size[0]  # wider
+    assert new_size[1] <= base_size[1]  # shorter

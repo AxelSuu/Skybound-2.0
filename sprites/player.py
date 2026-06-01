@@ -130,6 +130,8 @@ class Player(PhysicsSprite):
         self.jump_pressed = False        # Jump key state last frame (edge detection)
         self.coyote_timer = 0            # Frames of grace to jump after leaving ground
         self.jump_buffer_timer = 0       # Frames a pending jump press stays buffered
+        # Squash & stretch (purely visual): >0 squashes (land), <0 stretches (jump).
+        self.squash = 0.0
 
         # Load animation spritesheet
         self.spritesheet = Spritesheet("Playersheet.png")
@@ -214,10 +216,31 @@ class Player(PhysicsSprite):
             self.state = "falling"
 
         self.animate()
+        self._apply_squash()
 
         # Friction-based motion + screen wrap + rect/hitbox sync (shared base).
         # The hitbox is inset (+10, +7) from the sprite rect.
         self.apply_physics(hitbox_dx=10, hitbox_dy=7)
+
+    def land(self):
+        """Trigger the landing squash (called by the loop on ground contact)."""
+        self.squash = 1.0
+
+    def _apply_squash(self):
+        """Apply and decay the squash/stretch deformation to the current frame.
+
+        Purely visual: ``self.rect`` (the collision shape) is left untouched, so
+        the scaled image is anchored by its midbottom at draw time to keep the
+        feet planted. Uses pygame-ce ``transform.scale_by``.
+        """
+        if abs(self.squash) < 0.02:
+            self.squash = 0.0
+            return
+        k = 0.3  # max deformation = 30%
+        scale_x = 1.0 + k * self.squash
+        scale_y = 1.0 - k * self.squash
+        self.image = pg.transform.scale_by(self.image, (scale_x, scale_y))
+        self.squash *= 0.75  # ease back to neutral
 
     def _update_jump(self, space_held):
         """Resolve jumping with coyote time and jump buffering.
@@ -252,6 +275,7 @@ class Player(PhysicsSprite):
             self.coyote_timer = 0
             self.jump_buffer_timer = 0
             self.double_jump_used = False
+            self.squash = -1.0  # stretch on take-off
         elif (
             space_pressed_edge
             and self.has_double_jump
@@ -267,46 +291,33 @@ class Player(PhysicsSprite):
         self.jump_pressed = space_held
 
     def animate(self):
-        """Handle player animations based on the current state."""
+        """Handle player animations based on the current state.
 
-        if self.state == "idle":
-            if self.animation_timer % 20 == 0:
-                if self.playerleft:
-                    self.frame_index = (self.frame_index + 1) % len(
-                        self.idle_left_frames
-                    )
-                    self.image = self.idle_left_frames[self.frame_index]
-                    self.animation_timer = 0
-                else:
-                    self.frame_index = (self.frame_index + 1) % len(
-                        self.idle_right_frames
-                    )
-                    self.image = self.idle_right_frames[self.frame_index]
-                    self.animation_timer = 0
+        Always reassigns ``self.image`` to a clean (unscaled) frame so that the
+        squash/stretch pass downstream never compounds on an already-deformed
+        surface. Frame advancement is still gated per state.
+        """
+        # Pick the active frame list for the current state and facing, plus how
+        # often to advance the frame (None = single-frame poses).
+        if self.state == "moving":
+            frames = self.walk_left_frames if self.playerleft else self.walk_right_frames
+            gate = 6
+        elif self.state == "jumping":
+            frames = self.jumping_left_frames if self.playerleft else self.jumping_right_frames
+            gate = None
+        elif self.state == "falling":
+            frames = self.falling_left_frames if self.playerleft else self.falling_right_frames
+            gate = None
+        else:  # idle (and any fallback)
+            frames = self.idle_left_frames if self.playerleft else self.idle_right_frames
+            gate = 20
 
-        if self.state == "moving" and not self.playerleft:
-            if self.animation_timer % 6 == 0:  # Change frame every 0.1 seconds
-                self.frame_index = (self.frame_index + 1) % len(self.walk_right_frames)
-                self.image = self.walk_right_frames[self.frame_index]
-                self.animation_timer = 0
+        if gate is not None and self.animation_timer % gate == 0:
+            self.frame_index = (self.frame_index + 1) % len(frames)
+            self.animation_timer = 0
 
-        if self.state == "moving" and self.playerleft:
-            if self.animation_timer % 6 == 0:  # Change frame every 0.1 seconds
-                self.frame_index = (self.frame_index + 1) % len(self.walk_left_frames)
-                self.image = self.walk_left_frames[self.frame_index]
-                self.animation_timer = 0
-
-        if self.state == "jumping":
-            if self.playerleft:
-                self.image = self.jumping_left_frames[0]
-            else:
-                self.image = self.jumping_right_frames[0]
-
-        if self.state == "falling":
-            if self.playerleft:
-                self.image = self.falling_left_frames[0]
-            else:
-                self.image = self.falling_right_frames[0]
+        # Clamp the shared frame index in case we just switched frame lists.
+        self.image = frames[self.frame_index % len(frames)]
 
     def load_character(self):
         """Load the character frames for the player without a hat."""
