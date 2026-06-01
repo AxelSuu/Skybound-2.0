@@ -298,6 +298,127 @@ class Projectile(pg.sprite.Sprite):
             self.kill()
 
 
+class DiveBomberMob(BaseMob):
+    """Hovers at altitude and periodically dive-bombs toward the player."""
+    def __init__(self, x, y):
+        super().__init__(x, y)
+        self.hover_y = y
+        self.target_x = None
+        self.state = "hover"
+        self.dive_interval = random.randint(90, 150)
+        self.dive_duration = 35
+
+        self.image = pg.Surface((34, 26), pg.SRCALPHA)
+        pg.draw.polygon(self.image, (255, 140, 0), [(0, 0), (34, 0), (17, 26)])  # arrow/dart
+        pg.draw.polygon(self.image, (120, 50, 0), [(0, 0), (34, 0), (17, 26)], 2)
+        self.rect = self.image.get_rect()
+        self.rect.center = (x, y)
+        self.hitbox = pg.Rect(self.rect.left, self.rect.top, self.rect.width, self.rect.height)
+
+    def update(self, player_pos=None):
+        self.ai_timer += 1
+        if player_pos is not None:
+            self.target_x = player_pos.x
+
+        if self.state == "hover":
+            # Ease back toward hover altitude and drift slowly toward the player.
+            self.vel.y += (self.hover_y - self.pos.y) * 0.02
+            self.vel.y *= 0.85
+            if self.target_x is not None:
+                self.vel.x = max(-1.2, min(1.2, (self.target_x - self.pos.x) * 0.03))
+            # Commit to a dive once the timer is up and the player is below.
+            if self.ai_timer >= self.dive_interval and (
+                player_pos is None or player_pos.y > self.pos.y
+            ):
+                self.state = "dive"
+                self.ai_timer = 0
+                self.vel.y = 9.0
+                if self.target_x is not None:
+                    self.vel.x = max(-3.0, min(3.0, (self.target_x - self.pos.x) * 0.1))
+        else:  # diving
+            self.vel.y += 0.5  # accelerate downward
+            if self.ai_timer >= self.dive_duration or self.on_floor:
+                self.state = "hover"
+                self.ai_timer = 0
+
+        self.pos += self.vel
+        self._wrap_and_sync()
+
+
+class BossMob(BaseMob):
+    """A large boss that hovers near the top firing telegraphed spread shots.
+
+    The player cannot attack it (the game is dodge-and-climb); the boss is an
+    obstacle to survive on the way to the goal. It winds up visibly (telegraph)
+    before each volley so attacks can be read and dodged.
+    """
+    def __init__(self, x, y):
+        super().__init__(x, y)
+        self.health = 5  # conceptual; reserved for a future stomp/attack mechanic
+        self.hover_y = y
+        self.move_speed = 1.6
+        self.last_player_pos = None
+        self.projectiles = pg.sprite.Group()
+        self.shoot_timer = 0
+        self.shoot_interval = 140
+        self.telegraph_frames = 35
+        self.charging = False
+
+        self._base_image = self._make_face((150, 20, 40))     # menacing dark red
+        self._charge_image = self._make_face((255, 90, 60))   # bright wind-up
+        self.image = self._base_image
+        self.rect = self.image.get_rect()
+        self.rect.center = (x, y)
+        self.hitbox = pg.Rect(self.rect.left, self.rect.top, self.rect.width, self.rect.height)
+
+    @staticmethod
+    def _make_face(color):
+        surf = pg.Surface((64, 64), pg.SRCALPHA)
+        pg.draw.circle(surf, color, (32, 32), 30)
+        pg.draw.circle(surf, (0, 0, 0), (32, 32), 30, 3)
+        pg.draw.circle(surf, (255, 255, 255), (22, 26), 6)  # eyes
+        pg.draw.circle(surf, (255, 255, 255), (42, 26), 6)
+        pg.draw.circle(surf, (0, 0, 0), (22, 26), 3)
+        pg.draw.circle(surf, (0, 0, 0), (42, 26), 3)
+        pg.draw.arc(surf, (0, 0, 0), (20, 38, 24, 16), 3.5, 6.0, 3)  # frown
+        return surf
+
+    def update(self, player_pos=None):
+        if player_pos is not None:
+            self.last_player_pos = player_pos
+
+        # Slow horizontal tracking and gentle hover.
+        if self.last_player_pos is not None:
+            self.vel.x = max(
+                -self.move_speed,
+                min(self.move_speed, (self.last_player_pos.x - self.pos.x) * 0.01),
+            )
+        self.vel.y += (self.hover_y - self.pos.y) * 0.01
+        self.vel.y *= 0.9
+
+        # Attack cycle with a visible telegraph before each volley.
+        self.shoot_timer += 1
+        self.charging = self.shoot_timer >= (self.shoot_interval - self.telegraph_frames)
+        if self.shoot_timer >= self.shoot_interval:
+            self._shoot_spread()
+            self.shoot_timer = 0
+            self.charging = False
+
+        self.image = self._charge_image if self.charging else self._base_image
+        self.projectiles.update()
+
+        self.pos += self.vel
+        self._wrap_and_sync()
+
+    def _shoot_spread(self):
+        """Fire a fan of projectiles aimed around the player's position."""
+        if self.last_player_pos is None:
+            return
+        for dx in (-70, -25, 25, 70):
+            target = pg.Vector2(self.last_player_pos.x + dx, self.last_player_pos.y)
+            self.projectiles.add(Projectile(self.pos.x, self.pos.y, target))
+
+
 def create_random_mob(x, y, level=1):
     """Factory function to create random mobs based on level"""
     if level == 1:
@@ -309,5 +430,5 @@ def create_random_mob(x, y, level=1):
         mob_types = [ChaserMob, PatrolMob, JumperMob]
         return random.choice(mob_types)(x, y)
     else:
-        mob_types = [ChaserMob, PatrolMob, JumperMob, ShooterMob]
+        mob_types = [ChaserMob, PatrolMob, JumperMob, ShooterMob, DiveBomberMob]
         return random.choice(mob_types)(x, y)
