@@ -201,24 +201,6 @@ class Main_Loop:
                 pg.mixer.music.stop()
                 pg.quit()
 
-    def pause_music_func(self):
-        """
-        Pause all background music channels.
-        
-        This method was intended for global music pausing functionality
-        but is currently not fully implemented in the game. It's preserved
-        for future use or debugging purposes.
-        
-        When called, it:
-        1. Sets the pause_music flag to True
-        2. Pauses all four audio channels
-        """
-        self.pausemusic = True
-        self.channel1.pause()
-        self.channel2.pause()
-        self.channel3.pause()
-        self.channel4.pause()
-
 
 if __name__ == "__main__":
     """
