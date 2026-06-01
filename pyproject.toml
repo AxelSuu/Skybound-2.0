@@ -1,0 +1,39 @@
+[project]
+name = "skybound"
+version = "2.0.0"
+description = "A 2D platformer built with Python and Pygame with procedural level generation, multiple enemy characters, multiple states, power-ups and achievements."
+readme = "README.md"
+requires-python = ">=3.11,<3.14"
+dependencies = [
+    "pygame-ce>=2.5",
+    "numpy",
+]
+
+[dependency-groups]
+build = [
+    "pyinstaller==6.12.0",
+]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.6",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+# Start lenient: catch real bugs, not style churn on a revived codebase.
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = [
+    "E501",  # line length handled by formatter, not enforced as error
+    "F403",  # `import *` is used pervasively; migrate away incrementally
+    "F405",  # name may be undefined due to `import *`
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.uv]
+package = false
