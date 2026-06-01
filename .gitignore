@@ -12,3 +12,6 @@ dist/
 # Test / tooling caches
 .pytest_cache/
 .ruff_cache/
+
+# Player save data (migrated from txts/ on first run)
+save.json

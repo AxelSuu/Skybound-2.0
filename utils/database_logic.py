@@ -1,231 +1,96 @@
 #!/usr/bin/env python3
 """
-Skybound Database Logic System
+Skybound persistence facade.
 
-This module provides a simple file-based database system for managing
-game state and persistent data. All game data is stored in text files
-within the 'txts' folder, providing a lightweight persistence solution.
+Historically this module read and wrote one value per text file in ``txts/``.
+It is now a thin facade over ``utils.save_manager.SaveManager`` (a single JSON
+save loaded into memory), keeping the original Get*/Set* function names so the
+rest of the game keeps working unchanged.
 
-The database system manages:
-- Game state (current screen/mode)
-- Player progress (current level, score, high score)
-- Player customization (character selection, hats)
-- Settings and preferences
+The first time a value is read or written, the SaveManager migrates any legacy
+``txts/*.txt`` files into ``save.json`` automatically.
 
-This approach provides:
-- Simple implementation without external dependencies
-- Human-readable data files for debugging
-- Cross-platform compatibility
-- Easy backup and transfer of save data
-
-All functions follow a consistent naming pattern:
-- Get[DataType](): Retrieve data from file
-- Set[DataType](value): Store data to file
+All functions follow the original naming pattern:
+- Get[DataType](): retrieve a value
+- Set[DataType](value): store a value
 
 Author: Axel Suu
-Date: July 2025
 """
 
-import os
-
-# Constants for file paths
-TXT_FOLDER_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "txts"))
+from utils.save_manager import get_save_manager
 
 
 def GetScore():
-    """
-    Get the current player score (level progress).
-    
-    Returns:
-        int: Current level number/score
-        
-    The score represents the player's current level progress, starting from 1.
-    This value is used for level selection and difficulty scaling.
-    """
-    try:
-        with open(os.path.join(TXT_FOLDER_PATH, "Score.txt"), "r") as f:
-            return int(f.read().strip())
-    except (FileNotFoundError, ValueError):
-        # Return default score if file doesn't exist or is corrupted
-        return 1
+    """Current player level/score (default 1)."""
+    return int(get_save_manager().get("score"))
 
 
 def SetScore(score):
-    """
-    Set the current player score (level progress).
-    
-    Args:
-        score (int): New score/level to set
-        
-    This function updates the player's current level progress,
-    which determines which level they will play next.
-    """
-    try:
-        with open(os.path.join(TXT_FOLDER_PATH, "Score.txt"), "w") as f:
-            f.write(str(score))
-    except IOError as e:
-        print(f"Error saving score: {e}")
-
-
-##################################################################################
+    get_save_manager().set("score", int(score))
 
 
 def GetLevel():
-    txt_folder_path = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "..", "txts")
-    )
-    with open(os.path.join(txt_folder_path, "level.txt"), "r") as f:
-        return int(f.read())
+    """Which level layout to load (default 1)."""
+    return int(get_save_manager().get("level"))
 
 
 def SetLevel(level):
-    txt_folder_path = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "..", "txts")
-    )
-    with open(os.path.join(txt_folder_path, "level.txt"), "w") as f:
-        f.write(str(level))
-
-
-##################################################################################
+    get_save_manager().set("level", int(level))
 
 
 def GetGamestate():
-    txt_folder_path = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "..", "txts")
-    )
-    with open(os.path.join(txt_folder_path, "Gamestate.txt"), "r") as f:
-        return f.read()
+    """Current screen/state (runtime only, not persisted)."""
+    return get_save_manager().gamestate
 
 
 def SetGamestate(newGamestate):
-    txt_folder_path = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "..", "txts")
-    )
-    with open(os.path.join(txt_folder_path, "Gamestate.txt"), "w") as f:
-        f.write(str(newGamestate))
-
-
-##################################################################################
+    get_save_manager().gamestate = str(newGamestate)
 
 
 def GetHighScore():
-    txt_folder_path = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "..", "txts")
-    )
-    with open(os.path.join(txt_folder_path, "Highscore.txt"), "r") as f:
-        return int(f.read())  # int(f.read())?
+    """Best level reached (default 0)."""
+    return int(get_save_manager().get("highscore"))
 
 
 def SetHighScore(newHighScore):
-    txt_folder_path = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "..", "txts")
-    )
-    if newHighScore > int(GetHighScore()):
-        with open(os.path.join(txt_folder_path, "Highscore.txt"), "w") as f:
-            f.write(str(newHighScore))
+    """Update the high score only if it beats the stored one."""
+    if int(newHighScore) > GetHighScore():
+        get_save_manager().set("highscore", int(newHighScore))
 
 
 def manualSetHighScore(newHighScore):
-    txt_folder_path = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "..", "txts")
-    )
-    with open(os.path.join(txt_folder_path, "Highscore.txt"), "w") as f:
-        f.write(str(newHighScore))
-
-
-##################################################################################
-
-# The code below is discontinued
-
-##################################################################################
+    """Force-set the high score regardless of the current value."""
+    get_save_manager().set("highscore", int(newHighScore))
 
 
 def Hat():
-    txt_folder_path = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "..", "txts")
-    )
-    with open(os.path.join(txt_folder_path, "Hat.txt"), "r") as f:
-        return f.read()  # More logic could be added here to check if the hat is valid.
+    """Selected hat ("0" = none, "hat" = hat)."""
+    return str(get_save_manager().get("hat"))
 
 
 def SetHat(newHat):
-    txt_folder_path = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "..", "txts")
-    )
-    with open(os.path.join(txt_folder_path, "Hat.txt"), "w") as f:
-        f.write(str(newHat))
-
-
-##################################################################################
+    get_save_manager().set("hat", str(newHat))
 
 
 def SetChar(char):
-    txt_folder_path = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "..", "txts")
-    )
-    with open(os.path.join(txt_folder_path, "Char_selection.txt"), "w") as f:
-        f.write(str(char))
+    get_save_manager().set("char", int(char))
 
 
 def SelectedChar():
-    txt_folder_path = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "..", "txts")
-    )
-    with open(os.path.join(txt_folder_path, "Char_selection.txt"), "r") as f:
-        return int(f.read())
-
-
-##################################################################################
+    return int(get_save_manager().get("char"))
 
 
 def GetCoins():
-    """
-    Get the current player coin count.
-    
-    Returns:
-        int: Current number of coins collected
-        
-    The coin count represents the total coins collected across all gameplay sessions.
-    This value persists between game sessions and is used for achievements and progression.
-    """
-    try:
-        with open(os.path.join(TXT_FOLDER_PATH, "coins.txt"), "r") as f:
-            return int(f.read().strip())
-    except (FileNotFoundError, ValueError):
-        # Return default coins if file doesn't exist or is corrupted
-        return 0
+    """Total coins collected across sessions (default 0)."""
+    return int(get_save_manager().get("coins"))
 
 
 def SetCoins(coins):
-    """
-    Set the current player coin count.
-    
-    Args:
-        coins (int): New coin count to set
-        
-    This function updates the player's total coin count,
-    which persists across game sessions.
-    """
-    try:
-        with open(os.path.join(TXT_FOLDER_PATH, "coins.txt"), "w") as f:
-            f.write(str(coins))
-    except IOError as e:
-        print(f"Error saving coins: {e}")
+    get_save_manager().set("coins", int(coins))
 
 
 def AddCoins(amount):
-    """
-    Add coins to the current coin count.
-    
-    Args:
-        amount (int): Number of coins to add
-        
-    Returns:
-        int: New total coin count
-        
-    This function safely adds coins to the current total and saves the result.
-    """
-    current_coins = GetCoins()
-    new_total = current_coins + amount
+    """Add coins to the running total and return the new total."""
+    new_total = GetCoins() + int(amount)
     SetCoins(new_total)
     return new_total
