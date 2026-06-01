@@ -22,6 +22,7 @@ import os
 from utils.spritesheet import Spritesheet
 from utils.database_logic import Hat
 from utils.player_stats import player_stats
+from utils.upgrades import apply_upgrades
 from sprites.base import PhysicsSprite
 from constants import (
     PLAYER_ACC,
@@ -171,9 +172,11 @@ class Player(PhysicsSprite):
         self.double_jump_used = False
         self.shield_active = False
         self.power_up_effects = []
-        
-        # Load persistent stats
+        self.run_accel_mult = 1.0  # boosted by the move-speed shop upgrade
+
+        # Load persistent stats, then layer permanent shop upgrades on top.
         player_stats.apply_stats_to_player(self)
+        apply_upgrades(self)
         
         # Invincibility frames
         self.invincible_timer = 0
@@ -193,9 +196,9 @@ class Player(PhysicsSprite):
         if not keys[pg.K_LEFT] and not keys[pg.K_RIGHT] and self.on_floor:
             self.state = "idle"
 
-        # Apply speed boost if active
+        # Apply speed boost (temporary power-up) and the permanent move-speed upgrade
         speed_multiplier = 1.5 if self.speed_boost_timer > 0 else 1.0
-        base_acc = self.ACC * speed_multiplier
+        base_acc = self.ACC * speed_multiplier * self.run_accel_mult
 
         if keys[pg.K_LEFT]:
             self.acc.x = -base_acc

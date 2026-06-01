@@ -18,6 +18,7 @@ singleton, so existing call sites keep working unchanged.
 Author: Axel Suu (revived 2026)
 """
 
+import copy
 import json
 import os
 import tempfile
@@ -26,12 +27,15 @@ import tempfile
 # here — it is runtime-only (see SaveManager.gamestate); persisting "PAUSED"
 # or "GAME" across restarts would be wrong, and the menu resets it anyway.
 DEFAULTS = {
-    "score": 1,       # current level the player is on
-    "highscore": 0,   # best level reached
-    "level": 1,       # which level layout to load (1 = handcrafted, >1 = procedural)
-    "coins": 0,       # total coins collected across sessions
-    "hat": "0",       # cosmetic hat selection ("0" = none, "hat" = hat)
-    "char": 0,        # selected character index
+    "score": 1,        # current level the player is on
+    "highscore": 0,    # best level reached
+    "level": 1,        # which level layout to load (1 = handcrafted, >1 = procedural)
+    "coins": 0,        # total coins collected across sessions (spendable currency)
+    "hat": "0",        # cosmetic hat selection ("0" = none, "hat" = hat)
+    "char": 0,         # selected character index
+    "upgrades": {},    # permanent shop upgrades: {upgrade_id: level}
+    "settings": {},    # audio/preferences: {sfx_volume, music_volume, ...}
+    "daily_bests": {}, # daily challenge results: {"YYYY-MM-DD": best_level}
 }
 
 # Old text files to import on first run, keyed by save field.
@@ -51,7 +55,7 @@ class SaveManager:
     def __init__(self, path, txt_folder=None):
         self.path = path
         self.txt_folder = txt_folder
-        self.data = dict(DEFAULTS)
+        self.data = copy.deepcopy(DEFAULTS)
         self.gamestate = "MAIN_MENU"  # runtime only, never persisted
         self.load()
 
@@ -63,13 +67,13 @@ class SaveManager:
                     loaded = json.load(f)
             except (json.JSONDecodeError, OSError, ValueError):
                 # Corrupt or unreadable save -> defaults, don't crash.
-                self.data = dict(DEFAULTS)
+                self.data = copy.deepcopy(DEFAULTS)
                 return
             if isinstance(loaded, dict):
                 for key, default in DEFAULTS.items():
-                    self.data[key] = loaded.get(key, default)
+                    self.data[key] = loaded.get(key, copy.deepcopy(default))
             else:
-                self.data = dict(DEFAULTS)
+                self.data = copy.deepcopy(DEFAULTS)
         elif self.txt_folder and os.path.isdir(self.txt_folder):
             self._migrate_from_txt()
             self.save()

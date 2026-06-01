@@ -280,6 +280,7 @@ class Loop():
                 # Add floating text based on power-up type
                 if hasattr(powerup, 'value'):  # Coin
                     self.total_coins_collected += powerup.value
+                    AddCoins(powerup.value)  # persist to the spendable coin balance
                     coin_achievements = check_coin_achievement(self.total_coins_collected)
                     for achievement in coin_achievements:
                         if achievement:
