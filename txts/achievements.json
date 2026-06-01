@@ -7,21 +7,21 @@
   },
   {
     "id": "level_5",
-    "unlocked": false,
-    "progress": 2,
-    "unlock_date": null
+    "unlocked": true,
+    "progress": 5,
+    "unlock_date": "2026-06-01 19:28:16"
   },
   {
     "id": "level_10",
-    "unlocked": false,
-    "progress": 2,
-    "unlock_date": null
+    "unlocked": true,
+    "progress": 10,
+    "unlock_date": "2026-06-01 19:28:30"
   },
   {
     "id": "level_25",
-    "unlocked": false,
-    "progress": 2,
-    "unlock_date": null
+    "unlocked": true,
+    "progress": 25,
+    "unlock_date": "2026-06-01 20:02:57"
   },
   {
     "id": "collect_100_coins",

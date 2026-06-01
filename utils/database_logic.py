@@ -114,5 +114,28 @@ def ResetProgress():
     untouched. Used by the main-menu Restart button.
     """
     get_save_manager().reset(
-        "score", "highscore", "level", "coins", "hat", "char", "upgrades"
+        "score", "highscore", "level", "coins", "hat", "char", "upgrades",
+        "skin", "owned_skins", "owned_hats", "equipped_hat",
     )
+
+
+# ---------------------------------------------------------------------------
+# Cosmetics convenience wrappers (thin delegation to utils.cosmetics)
+# ---------------------------------------------------------------------------
+
+def GetSkin():
+    """Currently selected skin index."""
+    return int(get_save_manager().get("skin") or 0)
+
+
+def SetSkin(index):
+    get_save_manager().set("skin", int(index))
+
+
+def GetEquippedHat():
+    """Currently equipped hat id (str)."""
+    return str(get_save_manager().get("equipped_hat") or "none")
+
+
+def SetEquippedHat(hat_id):
+    get_save_manager().set("equipped_hat", str(hat_id))

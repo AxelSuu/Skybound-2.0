@@ -34,6 +34,19 @@ from utils.spritesheet import Spritesheet
 from sprites.base import PhysicsSprite
 
 
+def _crop(surf):
+    """Crop a Surface to its non-transparent bounding box.
+
+    The new enemy sprite cells are 4× padded — the visible character sits
+    centred inside a larger transparent canvas.  Cropping makes the logical
+    rect match the visible art so collision hitboxes stay tight.
+    """
+    bb = surf.get_bounding_rect()
+    if bb.width == 0 or bb.height == 0:
+        return surf  # fully transparent — return as-is to avoid zero-size subsurface
+    return surf.subsurface(bb).copy()
+
+
 class BaseMob(PhysicsSprite):
     """
     Base class for all enemy types in the game.
@@ -173,21 +186,31 @@ class PatrolMob(BaseMob):
         self.start_x = x
         self.patrol_speed = 0.8
         self.direction = 1
-        
-        # Create a simple red rectangle for now (you can replace with sprites)
-        self.image = pg.Surface((40, 40))
-        self.image.fill((255, 100, 100))  # Red color
+
+        # Load animated spritesheet; crop cells to tight visible art.
+        self.spritesheet = Spritesheet("Patrolsheet.png")
+        self.walk_frames = [
+            _crop(self.spritesheet.parse_sprite("patrol1.png")),
+            _crop(self.spritesheet.parse_sprite("patrol2.png")),
+        ]
+        self.image = self.walk_frames[0]
         self.rect = self.image.get_rect()
         self.rect.center = (x, y)
         self.hitbox = pg.Rect(
             self.rect.left, self.rect.top, self.rect.width, self.rect.height
         )
-        
+
     def update(self, player_pos=None):
+        # Animate walk cycle
+        self.animation_timer += 1
+        if self.animation_timer % 12 == 0:
+            self.frame_index = (self.frame_index + 1) % len(self.walk_frames)
+            self.image = self.walk_frames[self.frame_index]
+
         # Patrol behavior
         if abs(self.pos.x - self.start_x) > self.patrol_range:
             self.direction *= -1
-            
+
         self.vel.x = self.patrol_speed * self.direction
         self.update_physics()
 
@@ -198,30 +221,38 @@ class JumperMob(BaseMob):
         super().__init__(x, y)
         self.jump_timer = 0
         self.jump_interval = random.randint(60, 120)  # Random jump timing
-        
-        # Create a simple green rectangle for now
-        self.image = pg.Surface((35, 35))
-        self.image.fill((100, 255, 100))  # Green color
+
+        # Load animated spritesheet; crop cells to tight visible art.
+        # Frame 0 = squashed (grounded), frame 1 = stretched (airborne).
+        self.spritesheet = Spritesheet("Jumpersheet.png")
+        self.walk_frames = [
+            _crop(self.spritesheet.parse_sprite("jumper1.png")),
+            _crop(self.spritesheet.parse_sprite("jumper2.png")),
+        ]
+        self.image = self.walk_frames[0]
         self.rect = self.image.get_rect()
         self.rect.center = (x, y)
         self.hitbox = pg.Rect(
             self.rect.left, self.rect.top, self.rect.width, self.rect.height
         )
-        
+
     def update(self, player_pos=None):
         self.jump_timer += 1
-        
+
         # Jump periodically
         if self.jump_timer >= self.jump_interval and self.on_floor:
             self.vel.y = -8
             self.on_floor = False
             self.jump_timer = 0
             self.jump_interval = random.randint(60, 120)
-            
+
+        # Frame 0 = grounded/squashed, frame 1 = airborne/stretched
+        self.image = self.walk_frames[0 if self.on_floor else 1]
+
         # Slight horizontal movement
         if random.randint(1, 100) == 1:
             self.vel.x = random.uniform(-1, 1)
-            
+
         self.update_physics()
 
 
@@ -233,35 +264,48 @@ class ShooterMob(BaseMob):
         self.shoot_interval = 120  # Shoot every 2 seconds at 60 FPS
         self.projectiles = pg.sprite.Group()
         self.last_player_pos = None
-        
-        # Create a simple blue rectangle for now
-        self.image = pg.Surface((45, 45))
-        self.image.fill((100, 100, 255))  # Blue color
+        self.fire_pose_timer = 0  # frames remaining to show the firing pose
+
+        # Load animated spritesheet; crop cells to tight visible art.
+        # Frame 0 = idle, frame 1 = firing pose (shown briefly after a shot).
+        self.spritesheet = Spritesheet("Shootersheet.png")
+        self.walk_frames = [
+            _crop(self.spritesheet.parse_sprite("shooter1.png")),
+            _crop(self.spritesheet.parse_sprite("shooter2.png")),
+        ]
+        self.image = self.walk_frames[0]
         self.rect = self.image.get_rect()
         self.rect.center = (x, y)
         self.hitbox = pg.Rect(
             self.rect.left, self.rect.top, self.rect.width, self.rect.height
         )
-        
+
     def update(self, player_pos=None):
         self.shoot_timer += 1
-        
+
         if player_pos:
             self.last_player_pos = player_pos
-        
+
         # Shoot at player
-        if (self.shoot_timer >= self.shoot_interval and 
-            self.last_player_pos and 
-            abs(self.last_player_pos.x - self.pos.x) < 200):
-            
+        if (self.shoot_timer >= self.shoot_interval and
+                self.last_player_pos and
+                abs(self.last_player_pos.x - self.pos.x) < 200):
             self.shoot_at_player()
             self.shoot_timer = 0
-            
+            self.fire_pose_timer = 10  # show firing frame for 10 ticks
+
+        # Show firing frame briefly after a shot, then revert to idle.
+        if self.fire_pose_timer > 0:
+            self.fire_pose_timer -= 1
+            self.image = self.walk_frames[1]
+        else:
+            self.image = self.walk_frames[0]
+
         # Update projectiles
         self.projectiles.update()
-        
+
         self.update_physics()
-        
+
     def shoot_at_player(self):
         """Create a projectile towards the player"""
         if self.last_player_pos:
@@ -364,24 +408,14 @@ class BossMob(BaseMob):
         self.telegraph_frames = 35
         self.charging = False
 
-        self._base_image = self._make_face((150, 20, 40))     # menacing dark red
-        self._charge_image = self._make_face((255, 90, 60))   # bright wind-up
+        # Load boss spritesheet; crop to visible art for a tight collision rect.
+        spritesheet = Spritesheet("Bosssheet.png")
+        self._base_image = _crop(spritesheet.parse_sprite("boss_idle.png"))
+        self._charge_image = _crop(spritesheet.parse_sprite("boss_charge.png"))
         self.image = self._base_image
         self.rect = self.image.get_rect()
         self.rect.center = (x, y)
         self.hitbox = pg.Rect(self.rect.left, self.rect.top, self.rect.width, self.rect.height)
-
-    @staticmethod
-    def _make_face(color):
-        surf = pg.Surface((64, 64), pg.SRCALPHA)
-        pg.draw.circle(surf, color, (32, 32), 30)
-        pg.draw.circle(surf, (0, 0, 0), (32, 32), 30, 3)
-        pg.draw.circle(surf, (255, 255, 255), (22, 26), 6)  # eyes
-        pg.draw.circle(surf, (255, 255, 255), (42, 26), 6)
-        pg.draw.circle(surf, (0, 0, 0), (22, 26), 3)
-        pg.draw.circle(surf, (0, 0, 0), (42, 26), 3)
-        pg.draw.arc(surf, (0, 0, 0), (20, 38, 24, 16), 3.5, 6.0, 3)  # frown
-        return surf
 
     def update(self, player_pos=None):
         if player_pos is not None:

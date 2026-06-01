@@ -31,11 +31,16 @@ DEFAULTS = {
     "highscore": 0,    # best level reached
     "level": 1,        # which level layout to load (1 = handcrafted, >1 = procedural)
     "coins": 0,        # total coins collected across sessions (spendable currency)
-    "hat": "0",        # cosmetic hat selection ("0" = none, "hat" = hat)
-    "char": 0,         # selected character index
+    "hat": "0",        # legacy hat flag ("0" = none, "hat" = hat) — kept for migration
+    "char": 0,         # legacy character index — kept for migration
     "upgrades": {},    # permanent shop upgrades: {upgrade_id: level}
     "settings": {},    # audio/preferences: {sfx_volume, music_volume, ...}
     "daily_bests": {}, # daily challenge results: {"YYYY-MM-DD": best_level}
+    # --- Cosmetics (v2) ---
+    "skin": 0,             # selected skin index (0 = Classic)
+    "owned_skins": [0],    # list of unlocked skin indices
+    "owned_hats": ["none"],# list of unlocked hat ids
+    "equipped_hat": "none",# currently equipped hat id
 }
 
 # Old text files to import on first run, keyed by save field.
@@ -72,10 +77,12 @@ class SaveManager:
             if isinstance(loaded, dict):
                 for key, default in DEFAULTS.items():
                     self.data[key] = loaded.get(key, copy.deepcopy(default))
+                self._migrate_legacy_cosmetics()
             else:
                 self.data = copy.deepcopy(DEFAULTS)
         elif self.txt_folder and os.path.isdir(self.txt_folder):
             self._migrate_from_txt()
+            self._migrate_legacy_cosmetics()
             self.save()
             self._cleanup_legacy_txt()
 
@@ -97,6 +104,24 @@ class SaveManager:
                 os.remove(os.path.join(self.txt_folder, fname))
             except OSError:
                 pass  # already gone or unreadable -> nothing to clean
+
+    def _migrate_legacy_cosmetics(self):
+        """One-time upgrade of the legacy hat/char fields to the v2 cosmetics
+        fields.  Runs on load; is a no-op once the new fields are present.
+
+        If the player previously owned the old red hat (hat == "hat") we grant
+        them the "crown" (the closest match) so they don't lose their unlock.
+        """
+        # Only migrate when the new fields are still at their defaults AND the
+        # legacy hat flag is set — avoids clobbering an already-upgraded save.
+        if self.data.get("hat") == "hat" and "crown" not in self.data.get("owned_hats", []):
+            hats = list(self.data.get("owned_hats", ["none"]))
+            if "crown" not in hats:
+                hats.append("crown")
+            self.data["owned_hats"] = hats
+            # Also equip the crown if the player had it selected
+            if self.data.get("char") == 1:
+                self.data["equipped_hat"] = "crown"
 
     def save(self):
         """Atomically persist the current data to disk."""

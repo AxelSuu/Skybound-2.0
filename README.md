@@ -1,21 +1,21 @@
 Skybound 2.0
 
 A 2D platformer built with Python and Pygame-ce with procedural level generation, multiple enemy characters, multiple states, power-ups and achievements.
-Straight up run main.py or run pyinstaller skybound.spec for the included build system
+Straight up run 
+```
+uv run python main.py
+``` 
+or run 
+```
+uv run --group build pyinstaller skybound.spec
+``` 
+for the included build system to OS agnostically build an exe
 
 <table>
   <tr>
     <td><img src="imgs/pic1.png"/></td>
     <td><img src="imgs/pic2.png"/></td>
     <td><img src="imgs/pic3.png"/></td>
-  </tr>
-</table>
-
-<table>
-  <tr>
-    <td><img src="imgs/pic4.png"/></td>
-    <td><img src="imgs/pic9.png"/></td>
-    <td><img src="imgs/pic10.png"/></td>
   </tr>
 </table>
 

@@ -30,13 +30,9 @@ from constants import WIDTH, HEIGHT, FPS
 from utils.database_logic import (
     GetHighScore,
     SetGamestate,
-    SetHat,
-    SetChar,
     SetScore,
     SetLevel,
     manualSetHighScore,
-    SelectedChar,
-    Hat,
     ResetProgress,
 )
 from utils.daily import set_active as set_daily_active, get_daily_best
@@ -209,81 +205,108 @@ class Main_menu:
             pg.display.flip()
 
     def show_character_selection(self):
-        # Create character selection screen, talks with txt files
+        """Cosmetics selection screen — choose skin and hat from owned items.
 
-        hat_image = pg.image.load(
-            os.path.join(self.img_folder_path, "hat1.png")
-        ).convert_alpha()
-        normal_image = pg.image.load(
-            os.path.join(self.img_folder_path, "IdleL2.png")
-        ).convert_alpha()
-        hat_character = normal_image.copy()
-        hat_character.blit(hat_image, (0, -8))
+        Items are displayed as a compact grid:
+          - Skins section: one button per owned skin (unowned greyed out).
+          - Hats section:  one button per owned hat  (unowned greyed out).
 
-        character_screen = True
-        while character_screen:
+        Only owned items can be equipped; unowned ones show "Buy in Shop" to
+        guide the player toward the shop.
+        """
+        from utils.cosmetics import (
+            SKINS, HATS, owned_skins, owned_hats,
+            get_skin, set_skin, get_hat, set_hat,
+        )
+
+        GOLD = (255, 215, 0)
+        GREY = (160, 160, 160)
+        GREEN = (60, 180, 75)
+
+        # Buttons are rebuilt each frame so clicks always see fresh positions.
+        skin_buttons = []
+        hat_buttons = []
+
+        active = True
+        while active:
             self.screen.fill(self.LIGHTBLUE)
-            draw_text(
-                self.screen, "Character Selection", 50, self.WIDTH / 2, self.HEIGHT / 4
-            )
-            draw_text(
-                self.screen,
-                "Press ESC to return",
-                22,
-                self.WIDTH / 2,
-                self.HEIGHT * 0.8,
-            )
+            draw_text(self.screen, "Character Selection", 36, self.WIDTH / 2, 28)
+            draw_text(self.screen, "Press ESC to return", 16, self.WIDTH / 2, self.HEIGHT - 18)
 
-            # Draw untouched buttons
-            bw = getattr(self, 'BUTTON_WIDTH', 100)
-            hw = bw / 2
-            self.hat_button = pg.Rect(self.WIDTH / 2 - hw, self.HEIGHT / 2 - 10, bw, 30)
-            self.normal_button = pg.Rect(self.WIDTH / 2 - hw, self.HEIGHT / 2 + 40, bw, 30)
+            owned_s = owned_skins()
+            owned_h = owned_hats()
+            current_skin = get_skin()
+            current_hat = get_hat()
 
-            # Logic for drawing touched buttons
-            selected_char = SelectedChar()
-            if selected_char == 0:
-                pg.draw.rect(self.screen, self.BLUE, self.normal_button)
-                pg.draw.rect(self.screen, self.BLACK, self.hat_button, 2)
-                draw_text(
-                    self.screen, "Normal", 22, self.WIDTH / 2, self.HEIGHT / 2 + 53
-                )
-                draw_text(self.screen, "Hat", 22, self.WIDTH / 2, self.HEIGHT / 2 + 3)
-                self.screen.blit(
-                    normal_image, (self.WIDTH / 2 + 100, self.HEIGHT / 2 - 50)
-                )
+            skin_buttons = []
+            hat_buttons = []
 
-            elif selected_char == 1:
-                pg.draw.rect(self.screen, self.BLUE, self.hat_button)
-                pg.draw.rect(self.screen, self.BLACK, self.normal_button, 2)
-                draw_text(
-                    self.screen, "Normal", 22, self.WIDTH / 2, self.HEIGHT / 2 + 53
-                )
-                draw_text(self.screen, "Hat", 22, self.WIDTH / 2, self.HEIGHT / 2 + 3)
-                self.screen.blit(
-                    hat_character, (self.WIDTH / 2 + 100, self.HEIGHT / 2 - 50)
-                )
+            # ---- Skins ----
+            draw_text(self.screen, "Skins", 22, self.WIDTH / 2, 60)
+            btn_w, btn_h = 80, 28
+            skin_ids = list(SKINS.keys())
+            total_w = len(skin_ids) * (btn_w + 8) - 8
+            sx = self.WIDTH / 2 - total_w / 2
+            sy = 80
+            for idx in skin_ids:
+                spec = SKINS[idx]
+                is_owned = idx in owned_s
+                is_equipped = idx == current_skin
+                btn = pg.Rect(sx, sy, btn_w, btn_h)
+                if is_equipped:
+                    pg.draw.rect(self.screen, GOLD, btn)
+                elif is_owned:
+                    pg.draw.rect(self.screen, GREEN, btn)
+                else:
+                    pg.draw.rect(self.screen, GREY, btn)
+                pg.draw.rect(self.screen, self.BLACK, btn, 2)
+                draw_text(self.screen, spec["name"], 13, btn.centerx, btn.centery)
+                skin_buttons.append((btn, idx, is_owned))
+                sx += btn_w + 8
 
-            else:
-                pg.draw.rect(self.screen, self.BLACK, self.hat_button, 2)
-                pg.draw.rect(self.screen, self.BLACK, self.normal_button, 2)
-                draw_text(
-                    self.screen, "Normal", 22, self.WIDTH / 2, self.HEIGHT / 2 + 53
-                )
-                draw_text(self.screen, "Hat", 22, self.WIDTH / 2, self.HEIGHT / 2 + 3)
+            # ---- Hats ----
+            draw_text(self.screen, "Hats", 22, self.WIDTH / 2, 130)
+            hat_ids = list(HATS.keys())
+            total_w_h = len(hat_ids) * (btn_w + 8) - 8
+            hx = self.WIDTH / 2 - total_w_h / 2
+            hy = 150
+            for hat_id in hat_ids:
+                spec = HATS[hat_id]
+                is_owned = hat_id in owned_h
+                is_equipped = hat_id == current_hat
+                btn = pg.Rect(hx, hy, btn_w, btn_h)
+                if is_equipped:
+                    pg.draw.rect(self.screen, GOLD, btn)
+                elif is_owned:
+                    pg.draw.rect(self.screen, GREEN, btn)
+                else:
+                    pg.draw.rect(self.screen, GREY, btn)
+                pg.draw.rect(self.screen, self.BLACK, btn, 2)
+                draw_text(self.screen, spec["name"], 13, btn.centerx, btn.centery)
+                hat_buttons.append((btn, hat_id, is_owned))
+                hx += btn_w + 8
 
-            # event handler
+            # ---- Legend ----
+            legend_y = 200
+            draw_text(self.screen, "Gold = Equipped", 14, self.WIDTH / 2, legend_y,
+                      color=GOLD)
+            draw_text(self.screen, "Green = Owned  /  Grey = Buy in Shop", 14,
+                      self.WIDTH / 2, legend_y + 18)
+
+            # ---- Event handling ----
             for event in pg.event.get():
                 if event.type == pg.QUIT:
-                    character_screen = False
-                if event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
-                    character_screen = False
-                if event.type == pg.MOUSEBUTTONDOWN:
+                    active = False
+                elif event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
+                    active = False
+                elif event.type == pg.MOUSEBUTTONDOWN:
                     mouse_pos = pg.mouse.get_pos()
-                    if self.hat_button.collidepoint(mouse_pos) and Hat() == "hat":
-                        SetChar("1")
-                    if self.normal_button.collidepoint(mouse_pos):
-                        SetChar("0")
+                    for btn, idx, is_owned in skin_buttons:
+                        if btn.collidepoint(mouse_pos) and is_owned:
+                            set_skin(idx)
+                    for btn, hat_id, is_owned in hat_buttons:
+                        if btn.collidepoint(mouse_pos) and is_owned:
+                            set_hat(hat_id)
 
             pg.display.flip()
 

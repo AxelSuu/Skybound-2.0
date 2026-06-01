@@ -1,0 +1,24 @@
+{
+  "sprites": {
+    "shooter1.png": {
+      "width": 88,
+      "height": 88,
+      "x": 0,
+      "y": 0
+    },
+    "shooter2.png": {
+      "width": 88,
+      "height": 88,
+      "x": 88,
+      "y": 0
+    }
+  },
+  "meta": {
+    "image": "Shootersheet.png",
+    "size": {
+      "w": 176,
+      "h": 88
+    },
+    "scale": 1
+  }
+}

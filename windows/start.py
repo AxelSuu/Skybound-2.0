@@ -26,35 +26,11 @@ class Start:
         self.start_screen()
 
     def start_screen(self):
-
-        # This block is for a cool start screen dev message
-        if GetHighScore() == 0:
-            self.screen.fill(self.LIGHTBLUE)
-            text = string.ascii_letters + " " + "!" + "/"
-            target = "Hello"
-            result = ""
-            for letter in target:
-                while True:
-                    I = random.choice(text)
-                    self.screen.fill(self.LIGHTBLUE)
-                    time.sleep(0.001)
-                    draw_text(
-                        self.screen, result + I, 50, self.WIDTH / 2, self.HEIGHT / 4
-                    )
-                    pg.display.flip()
-                    if I == letter:
-                        result += I
-                        break
-                    time.sleep(0.000001)
-                time.sleep(0.000001)
-            time.sleep(0.5)
-
-        # The actual start screen loop
         while self.OnstartScreen:
             self.screen.fill(self.LIGHTBLUE)
 
             draw_text(
-                self.screen, "Escape the monster", 50, self.WIDTH / 2, self.HEIGHT / 4
+                self.screen, "Press V to start", 50, self.WIDTH / 2, self.HEIGHT / 4
             )
             draw_text(
                 self.screen,
@@ -62,9 +38,6 @@ class Start:
                 22,
                 self.WIDTH / 2,
                 self.HEIGHT / 2,
-            )
-            draw_text(
-                self.screen, "Press V to play", 22, self.WIDTH / 2, self.HEIGHT * 3 / 4
             )
             draw_text(
                 self.screen,

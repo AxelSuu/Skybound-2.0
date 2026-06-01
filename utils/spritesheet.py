@@ -57,27 +57,35 @@ class Spritesheet:
         data (dict): Parsed JSON metadata containing sprite definitions
     """
     
-    def __init__(self, filename):
+    def __init__(self, filename, meta_filename=None):
         """
         Initialize the spritesheet with the specified filename.
-        
+
         Args:
             filename (str): Name of the spritesheet file (PNG format)
-            
+            meta_filename (str | None): Optional explicit JSON metadata filename.
+                When None (default) the JSON is inferred from the PNG name by
+                replacing the extension.  Pass e.g. ``"Playersheet.json"`` to
+                let a recolor PNG share the original sheet's JSON layout without
+                requiring a sidecar file of its own.
+
         The constructor automatically loads both the image file and its
-        corresponding JSON metadata file (same name with .json extension).
+        corresponding JSON metadata file.
         """
         # Set up path to images folder
         self.img_folder_path = os.path.abspath(
             os.path.join(os.path.dirname(__file__), "..", "imgs")
         )
-        
+
         # Load the spritesheet image
         self.filename = os.path.join(self.img_folder_path, filename)
         self.sprite_sheet = pg.image.load(self.filename).convert_alpha()
-        
-        # Load the corresponding JSON metadata file
-        self.meta_data = self.filename.replace("png", "json")
+
+        # Load the corresponding JSON metadata file (explicit path overrides default)
+        if meta_filename is not None:
+            self.meta_data = os.path.join(self.img_folder_path, meta_filename)
+        else:
+            self.meta_data = self.filename.replace("png", "json")
         with open(self.meta_data) as f:
             self.data = json.load(f)
 

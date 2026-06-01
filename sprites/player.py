@@ -20,7 +20,8 @@ Date: July 2025
 import pygame as pg
 import os
 from utils.spritesheet import Spritesheet
-from utils.database_logic import WearsHat, GetCoins, AddCoins
+from utils.database_logic import GetCoins, AddCoins
+from utils.cosmetics import SKINS, HATS, get_skin, get_hat
 from utils.player_stats import player_stats
 from utils.upgrades import apply_upgrades
 from sprites.base import PhysicsSprite
@@ -105,26 +106,27 @@ class Player(PhysicsSprite):
             os.path.join(os.path.dirname(__file__), "..", "imgs")
         )
         
-        # Load character customization. The player wears the hat only when it
-        # is both owned and equipped (see WearsHat) — owning it but selecting
-        # "Normal" must show no hat.
-        self.wears_hat = WearsHat()
-        self.hat_image = pg.image.load(
-            os.path.join(self.img_folder_path, "hat1.png")
-        ).convert_alpha()
+        # Load character customization from the cosmetics system.
+        hat_id = get_hat()
+        hat_spec = HATS.get(hat_id)
+        self.hat_image = None
+        if hat_spec and hat_spec["file"] is not None:
+            self.hat_image = pg.image.load(
+                os.path.join(self.img_folder_path, hat_spec["file"])
+            ).convert_alpha()
 
         # Load default character frame
         self.startframe = pg.image.load(
             os.path.join(self.img_folder_path, "IdleL2.png")
         ).convert_alpha()
-        
+
         # Animation state variables
         self.jumping, self.falling = False, False
         self.frame_index = 0              # Current frame in animation sequence
         self.animation_timer = 0          # Timer for animation frame switching
         self.playerleft = True            # Player facing direction (True = left)
         self.state = "idle"              # Current animation state
-        
+
         # Movement and physics state (pos/vel/acc, WIDTH, HEIGHT, ACC, FRICTION
         # are provided by PhysicsSprite).
         self.jump_pressed = False        # Jump key state last frame (edge detection)
@@ -133,11 +135,17 @@ class Player(PhysicsSprite):
         # Squash & stretch (purely visual): >0 squashes (land), <0 stretches (jump).
         self.squash = 0.0
 
-        # Load animation spritesheet
-        self.spritesheet = Spritesheet("Playersheet.png")
-        
-        # Load character animations, blitting the hat on if it's equipped.
-        self.load_character(wear_hat=self.wears_hat)
+        # Load animation spritesheet for the selected skin.
+        # All recolors share Playersheet.json for frame definitions.
+        skin_idx = get_skin()
+        skin_sheet = SKINS[skin_idx]["sheet"]
+        if skin_idx == 0:
+            self.spritesheet = Spritesheet(skin_sheet)
+        else:
+            self.spritesheet = Spritesheet(skin_sheet, meta_filename="Playersheet.json")
+
+        # Load character animations, blitting the hat on top if one is equipped.
+        self.load_character(hat_img=self.hat_image)
 
         self.image = self.startframe  # Start with the first frame
 
@@ -318,11 +326,14 @@ class Player(PhysicsSprite):
         # Clamp the shared frame index in case we just switched frame lists.
         self.image = frames[self.frame_index % len(frames)]
 
-    def load_character(self, wear_hat=False):
+    def load_character(self, hat_img=None):
         """Load the player's animation frames from the spritesheet.
 
-        When ``wear_hat`` is True the hat is blitted onto every frame; otherwise
-        the bare character is used.
+        Args:
+            hat_img: A ``pygame.Surface`` to blit onto every frame as a hat,
+                or ``None`` for no hat.  Pass the pre-loaded hat surface from
+                ``__init__``; this keeps the cosmetics logic there and keeps
+                this method purely concerned with frames.
         """
         self.idle_left_frames = [
             self.spritesheet.parse_sprite("idlel1.png"),
@@ -349,14 +360,18 @@ class Player(PhysicsSprite):
         self.falling_left_frames = [self.spritesheet.parse_sprite("fallingl.png")]
         self.falling_right_frames = [self.spritesheet.parse_sprite("fallingr.png")]
 
-        if wear_hat:
-            self._apply_hat()
+        if hat_img is not None:
+            self._apply_hat(hat_img)
 
-    def _apply_hat(self):
-        """Blit the hat onto every animation frame.
+    def _apply_hat(self, hat_img):
+        """Blit *hat_img* onto every animation frame.
 
         Left-facing frames anchor the hat at x=0, right-facing at x=10, so it
-        tracks the character's head in both directions.
+        tracks the character's head in both directions.  The same anchor offsets
+        work for all hats in the catalogue (they were drawn to the same grid).
+
+        Args:
+            hat_img: A ``pygame.Surface`` containing the hat art.
         """
         left_groups = (
             self.idle_left_frames,
@@ -372,10 +387,10 @@ class Player(PhysicsSprite):
         )
         for group in left_groups:
             for frame in group:
-                frame.blit(self.hat_image, (0, -8))
+                frame.blit(hat_img, (0, -8))
         for group in right_groups:
             for frame in group:
-                frame.blit(self.hat_image, (10, -8))
+                frame.blit(hat_img, (10, -8))
 
     def update_power_ups(self):
         """Update all active power-up timers"""

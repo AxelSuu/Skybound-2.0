@@ -20,21 +20,34 @@ def temp_save(tmp_path, monkeypatch):
     monkeypatch.setattr(sm_module, "_manager", SaveManager(str(tmp_path / "save.json")))
 
 
-def test_player_wears_hat_when_owned_and_equipped(temp_save):
+# ---------------------------------------------------------------------------
+# Player hat / cosmetics
+# ---------------------------------------------------------------------------
+
+def test_player_no_hat_by_default(temp_save):
+    """Fresh save → no hat equipped → hat_image is None."""
+    player = Player()
+    assert player.hat_image is None
+
+
+def test_player_has_hat_image_when_cap_equipped(temp_save):
+    """Equip 'cap' (always owned after buying) → hat_image is a Surface."""
+    from utils.cosmetics import buy_hat
+    # Grant coins and buy the cap
     import utils.database_logic as db
+    db.SetCoins(100)
+    buy_hat("cap")
+    player = Player()
+    assert player.hat_image is not None
+    assert isinstance(player.hat_image, pg.Surface)
 
-    db.SetHat("hat")
-    db.SetChar(1)
-    assert Player().wears_hat is True
 
-
-def test_player_drops_hat_when_switched_to_normal(temp_save):
-    """Regression: owning the hat but selecting "Normal" must show no hat."""
-    import utils.database_logic as db
-
-    db.SetHat("hat")  # owned
-    db.SetChar(0)     # but "Normal" selected
-    assert Player().wears_hat is False
+def test_player_classic_skin_by_default(temp_save):
+    """Default skin is Classic (index 0)."""
+    from utils.cosmetics import get_skin
+    assert get_skin() == 0
+    player = Player()
+    assert player.rect is not None
 
 
 def test_mob_constructs_with_physics_state():
@@ -89,3 +102,39 @@ def test_simple_mob_gravity_has_no_friction():
     assert mob.vel.x == 2.0
     # Gravity added one tick of downward velocity.
     assert mob.vel.y == 0.5
+
+
+# ---------------------------------------------------------------------------
+# New enemy spritesheet construction tests
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("MobClass,spawn,cell_w,cell_h", [
+    # (class name, spawn pos, raw cell width, raw cell height)
+    ("PatrolMob",  (200, 300),  80,  80),
+    ("JumperMob",  (150, 300),  72,  72),
+    ("ShooterMob", (250, 300),  88,  88),
+    ("BossMob",    (240, 100), 128, 128),
+])
+def test_enemy_sprite_rect_is_tight(MobClass, spawn, cell_w, cell_h):
+    """Enemy sprite rects must be ≤ the raw spritesheet cell size.
+
+    _crop() trims transparent padding, so the resulting rect should be at most
+    the full cell size.  For smaller enemies the crop noticeably reduces the
+    size; for the boss the art fills most of the cell so the bound is the cell
+    itself — the important thing is it's not *larger* than the raw cell.
+    """
+    import importlib
+    mod = importlib.import_module("sprites.mob_types")
+    cls = getattr(mod, MobClass)
+    mob = cls(*spawn)
+
+    # Rect must not exceed the raw cell dimensions (un-cropped would equal them).
+    assert mob.rect.width <= cell_w, (
+        f"{MobClass}.rect.width={mob.rect.width} exceeds cell_w={cell_w}"
+    )
+    assert mob.rect.height <= cell_h, (
+        f"{MobClass}.rect.height={mob.rect.height} exceeds cell_h={cell_h}"
+    )
+    # Sprites must have a proper image surface and physics state.
+    assert isinstance(mob.image, pg.Surface)
+    assert isinstance(mob.pos, pg.Vector2)

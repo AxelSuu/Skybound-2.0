@@ -28,12 +28,20 @@ _BLACK = (0, 0, 0)
 _font_cache: dict = {}
 
 
-def draw_text(screen, text, size, x, y):
-    """Draw center-aligned black text at (x, y) using the Outfit font."""
+def draw_text(screen, text, size, x, y, color=None):
+    """Draw center-aligned text at (x, y) using the Outfit font.
+
+    Args:
+        screen: pygame Surface to draw on.
+        text (str): Text string to render.
+        size (int): Font point size.
+        x, y (float): Centre coordinates of the rendered text.
+        color (tuple | None): RGB color tuple.  Defaults to black when None.
+    """
     if size not in _font_cache:
         _font_cache[size] = pg.font.Font(_FONT_PATH, size)
     font = _font_cache[size]
-    text_surface = font.render(text, True, _BLACK)
+    text_surface = font.render(text, True, color if color is not None else _BLACK)
     text_rect = text_surface.get_rect()
     text_rect.center = (x, y)
     screen.blit(text_surface, text_rect)

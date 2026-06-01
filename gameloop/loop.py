@@ -129,13 +129,34 @@ class Loop():
         icon = pg.image.load(os.path.join(IMG_FOLDER_PATH, 'icon.png'))
         pg.display.set_icon(icon)
         self.clock = pg.time.Clock()
-        
+
         # Load font for UI
         try:
             font_path = os.path.join(os.path.dirname(__file__), "..", "font", "Outfit-Regular.ttf")
             self.font = pg.font.Font(font_path, 16)
-        except:
+        except Exception:
             self.font = pg.font.Font(None, 16)
+
+        # Load HUD power-up icons (32×32 source; scaled to 16×16 for the HUD bar).
+        # Keys match the effect names returned by Player.get_active_effects() and
+        # the special-purpose "health" / "coin" entries used by draw_ui().
+        icon_folder = os.path.join(IMG_FOLDER_PATH, "icons")
+        _icon_map = {
+            "Speed":       "icon_speed.png",
+            "Jump":        "icon_jump.png",
+            "Shield":      "icon_shield.png",
+            "Double Jump": "icon_double_jump.png",
+            "Magnet":      "icon_magnet.png",
+            "health":      "icon_health.png",
+            "coin":        "icon_coin.png",
+        }
+        self.icons = {}
+        for key, fname in _icon_map.items():
+            try:
+                raw = pg.image.load(os.path.join(icon_folder, fname)).convert_alpha()
+                self.icons[key] = pg.transform.scale(raw, (16, 16))
+            except Exception:
+                self.icons[key] = None  # missing asset → skip blit gracefully
 
     def startgame(self):
         self.level = LevelClass(self)
@@ -383,58 +404,80 @@ class Loop():
         pg.display.flip()
 
     def draw_ui(self):
-        """Draw the game UI including health, coins, and power-up indicators"""
-        # Draw player health
+        """Draw the game UI including health, coins, and power-up indicators."""
+        # ---- Health row ----
+        health_icon = self.icons.get("health")
+        hx = 10
+        if health_icon:
+            self.screen.blit(health_icon, (hx, HEIGHT - 80))
+            hx += 20
         health_text = f"Health: {self.player.health}/{self.player.max_health}"
         health_surface = self.font.render(health_text, True, (255, 255, 255))
-        self.screen.blit(health_surface, (10, HEIGHT - 80))
-        
+        self.screen.blit(health_surface, (hx, HEIGHT - 80))
+
         # Draw health hearts
         for i in range(self.player.max_health):
             heart_color = (255, 0, 0) if i < self.player.health else (100, 100, 100)
             heart_rect = pg.Rect(10 + i * 20, HEIGHT - 60, 16, 16)
             pg.draw.rect(self.screen, heart_color, heart_rect)
-            
-        # Draw coins
+
+        # ---- Coins row ----
+        coin_icon = self.icons.get("coin")
+        cx = 10
+        if coin_icon:
+            self.screen.blit(coin_icon, (cx, HEIGHT - 40))
+            cx += 20
         coin_text = f"Coins: {self.player.coins}"
         coin_surface = self.font.render(coin_text, True, (255, 215, 0))
-        self.screen.blit(coin_surface, (10, HEIGHT - 40))
-        
-        # Draw level
+        self.screen.blit(coin_surface, (cx, HEIGHT - 40))
+
+        # ---- Level ----
         level_text = f"Level: {GetScore()}"
         level_surface = self.font.render(level_text, True, (255, 255, 255))
         self.screen.blit(level_surface, (10, HEIGHT - 20))
-        
-        # Draw active power-up effects
+
+        # ---- Active power-up effects (top-right) ----
         active_effects = self.player.get_active_effects()
+        effect_colors = {
+            "Speed":       (255, 255, 0),
+            "Jump":        (0, 255, 0),
+            "Shield":      (0, 191, 255),
+            "Double Jump": (255, 0, 255),
+            "Magnet":      (255, 140, 0),
+        }
         for i, (effect_name, duration) in enumerate(active_effects):
             effect_y = 70 + i * 25
-            effect_color = {
-                "Speed": (255, 255, 0),
-                "Jump": (0, 255, 0),
-                "Shield": (0, 191, 255),
-                "Double Jump": (255, 0, 255)
-            }.get(effect_name, (255, 255, 255))
-            
-            # Draw effect background
-            effect_rect = pg.Rect(WIDTH - 90, effect_y, 80, 20)
+            effect_color = effect_colors.get(effect_name, (255, 255, 255))
+            icon_surf = self.icons.get(effect_name)
+
+            # Background
+            effect_rect = pg.Rect(WIDTH - 100, effect_y, 90, 20)
             pg.draw.rect(self.screen, (*effect_color, 50), effect_rect)
-            
-            # Draw effect progress bar
-            progress = min(1.0, duration / 300.0)  # Assuming 300 is max duration
-            bar_width = int(76 * progress)
-            bar_rect = pg.Rect(WIDTH - 88, effect_y + 2, bar_width, 16)
+
+            # Progress bar (starts after the icon slot)
+            bar_x = WIDTH - 98 + (18 if icon_surf else 0)
+            bar_w_max = 70 - (18 if icon_surf else 0)
+            progress = min(1.0, duration / 300.0)
+            bar_rect = pg.Rect(bar_x, effect_y + 2, int(bar_w_max * progress), 16)
             pg.draw.rect(self.screen, effect_color, bar_rect)
-            
-            # Draw effect name
+
+            # Icon (left edge of the bar area)
+            if icon_surf:
+                self.screen.blit(icon_surf, (WIDTH - 98, effect_y + 2))
+
+            # Effect name label
             effect_text = self.font.render(effect_name, True, (255, 255, 255))
-            text_rect = effect_text.get_rect(center=(WIDTH - 50, effect_y + 10))
+            text_rect = effect_text.get_rect(center=(WIDTH - 55, effect_y + 10))
             self.screen.blit(effect_text, text_rect)
-            
-        # Draw shield indicator
+
+        # ---- Shield bubble ----
         if self.player.shield_active:
-            shield_surface = pg.Surface((self.player.rect.width + 10, self.player.rect.height + 10), pg.SRCALPHA)
-            pg.draw.circle(shield_surface, (0, 191, 255, 100), 
-                          (shield_surface.get_width()//2, shield_surface.get_height()//2), 
-                          shield_surface.get_width()//2, 3)
+            shield_surface = pg.Surface(
+                (self.player.rect.width + 10, self.player.rect.height + 10), pg.SRCALPHA
+            )
+            pg.draw.circle(
+                shield_surface, (0, 191, 255, 100),
+                (shield_surface.get_width() // 2, shield_surface.get_height() // 2),
+                shield_surface.get_width() // 2, 3,
+            )
             self.screen.blit(shield_surface, (self.player.rect.x - 5, self.player.rect.y - 5))

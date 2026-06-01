@@ -1,0 +1,24 @@
+{
+  "sprites": {
+    "jumper1.png": {
+      "width": 72,
+      "height": 72,
+      "x": 0,
+      "y": 0
+    },
+    "jumper2.png": {
+      "width": 72,
+      "height": 72,
+      "x": 72,
+      "y": 0
+    }
+  },
+  "meta": {
+    "image": "Jumpersheet.png",
+    "size": {
+      "w": 144,
+      "h": 72
+    },
+    "scale": 1
+  }
+}
