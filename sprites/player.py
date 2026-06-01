@@ -22,9 +22,8 @@ import os
 from utils.spritesheet import Spritesheet
 from utils.database_logic import Hat
 from utils.player_stats import player_stats
+from sprites.base import PhysicsSprite
 from constants import (
-    WIDTH,
-    HEIGHT,
     PLAYER_ACC,
     FRICTION,
     JUMP_VELOCITY,
@@ -35,7 +34,7 @@ from constants import (
 )
 
 
-class Player(pg.sprite.Sprite):
+class Player(PhysicsSprite):
     """
     Player character class with comprehensive movement, animation, and power-up systems.
     
@@ -94,9 +93,10 @@ class Player(pg.sprite.Sprite):
         but statistics like coins and certain upgrades may be restored
         from previous gameplay sessions.
         """
-        # Initialize pygame sprite base class
-        pg.sprite.Sprite.__init__(self)
-        
+        # Initialize the shared physics base (sets pos/vel/acc, ACC, FRICTION,
+        # WIDTH, HEIGHT, on_floor).
+        super().__init__(acc=PLAYER_ACC, friction=FRICTION)
+
         # Set up file paths for game assets
         self.img_folder_path = os.path.abspath(
             os.path.join(os.path.dirname(__file__), "..", "imgs")
@@ -123,18 +123,10 @@ class Player(pg.sprite.Sprite):
         self.playerleft = True            # Player facing direction (True = left)
         self.state = "idle"              # Current animation state
         
-        # Movement and physics state
-        self.on_floor = False            # Ground contact detection
+        # Movement and physics state (pos/vel/acc, WIDTH, HEIGHT, ACC, FRICTION
+        # are provided by PhysicsSprite).
         self.jump_pressed = False        # Jump input state (prevents double-jumping)
-        
-        # Screen dimensions for boundary checking
-        self.WIDTH = WIDTH
-        self.HEIGHT = HEIGHT
 
-        # Physics constants
-        self.PLAYER_ACC = PLAYER_ACC     # Player acceleration rate
-        self.PLAYER_FRICTION = FRICTION  # Friction/deceleration rate
-        
         # Load animation spritesheet
         self.spritesheet = Spritesheet("Playersheet.png")
         
@@ -150,9 +142,7 @@ class Player(pg.sprite.Sprite):
             self.image.get_rect()
         )  # Set the rect attribute for collision detection
         self.rect.center = (30, self.HEIGHT * 3 / 4)  # Create center rect object
-        self.pos = pg.Vector2(self.rect.center)  # Set the position vector for movement
-        self.vel = pg.Vector2(0, 0)  # Set the velocity vector for movement
-        self.acc = pg.Vector2(0, 0)  # Set the acceleration vector for movement
+        self.seed_body(self.rect.center)  # Anchor pos/vel/acc at the spawn point
 
         # Create hitbox for collision detection
         self.hitbox = pg.Rect(
@@ -185,7 +175,7 @@ class Player(pg.sprite.Sprite):
     def update(self):
         """Update the player's position, state, and animations."""
 
-        self.acc = pg.Vector2(0, self.PLAYER_ACC)
+        self.acc = pg.Vector2(0, self.ACC)
         self.animation_timer += 1
         
         # Update power-up timers
@@ -198,7 +188,7 @@ class Player(pg.sprite.Sprite):
 
         # Apply speed boost if active
         speed_multiplier = 1.5 if self.speed_boost_timer > 0 else 1.0
-        base_acc = self.PLAYER_ACC * speed_multiplier
+        base_acc = self.ACC * speed_multiplier
 
         if keys[pg.K_LEFT]:
             self.acc.x = -base_acc
@@ -242,21 +232,9 @@ class Player(pg.sprite.Sprite):
 
         self.animate()
 
-        # apply friction
-        self.acc.x += self.vel.x * self.PLAYER_FRICTION
-        # equations of motion
-        self.vel += self.acc
-        self.pos += self.vel + self.PLAYER_ACC * self.acc
-        # wrap around the sides of the screen
-        if self.pos.x > self.WIDTH:
-            self.pos.x = 0
-        if self.pos.x < 0:
-            self.pos.x = self.WIDTH
-
-        self.rect.midbottom = self.pos
-
-        # Update hitbox position
-        self.hitbox.topleft = (self.rect.left + 10, self.rect.top + 7)
+        # Friction-based motion + screen wrap + rect/hitbox sync (shared base).
+        # The hitbox is inset (+10, +7) from the sprite rect.
+        self.apply_physics(hitbox_dx=10, hitbox_dy=7)
 
     def animate(self):
         """Handle player animations based on the current state."""

@@ -31,9 +31,10 @@ import pygame as pg
 import os
 import random
 from utils.spritesheet import Spritesheet
+from sprites.base import PhysicsSprite
 
 
-class BaseMob(pg.sprite.Sprite):
+class BaseMob(PhysicsSprite):
     """
     Base class for all enemy types in the game.
     
@@ -88,24 +89,18 @@ class BaseMob(pg.sprite.Sprite):
         4. Animation state management
         5. Combat and health systems
         """
-        # Initialize pygame sprite base class
-        pg.sprite.Sprite.__init__(self)
-        
+        # Initialize the shared physics base (pos/vel/acc, ACC, FRICTION,
+        # WIDTH, HEIGHT, on_floor). Enemies use the same tuning as the player.
+        super().__init__(acc=0.5, friction=-0.12)
+
         # Set up asset paths
         self.img_folder_path = os.path.abspath(
             os.path.join(os.path.dirname(__file__), "..", "imgs")
         )
-        
-        # Screen dimensions for boundary checking
-        self.HEIGHT = 600
-        self.WIDTH = 480
-        
-        # Physics system initialization
-        self.pos = pg.Vector2(x, y)         # World position
-        self.vel = pg.Vector2(0, 0)         # Current velocity
-        self.acc = pg.Vector2(0, 0)         # Current acceleration
-        self.on_floor = False               # Ground contact state
-        
+
+        # Anchor world position at the requested spawn point
+        self.pos = pg.Vector2(x, y)
+
         # Animation system
         self.frame_index = 0                # Current animation frame
         self.animation_timer = 0            # Animation timing counter
@@ -120,27 +115,14 @@ class BaseMob(pg.sprite.Sprite):
         self.direction = 1                  # Movement direction (1=right, -1=left)
         
     def update_physics(self):
-        """Basic physics update for all mobs"""
-        self.acc = pg.Vector2(0, 0.5)  # Gravity
-        self.vel += self.acc
-        self.pos += self.vel
-        
-        # Screen wrapping
-        if self.pos.x > self.WIDTH:
-            self.pos.x = 0
-        if self.pos.x < 0:
-            self.pos.x = self.WIDTH
-            
-        self.rect.midbottom = self.pos
-        self.hitbox.topleft = (self.rect.left, self.rect.top)
+        """Basic gravity update (no friction) shared by the simpler mobs."""
+        self.apply_gravity()
 
 
 class ChaserMob(BaseMob):
     """Mob that chases the player (original behavior)"""
     def __init__(self, x=440, y=450):
         super().__init__(x, y)
-        self.MOB_ACC = 0.5
-        self.MOB_FRICTION = -0.12
         self.chase_speed = 1.4
         
         # Load the spritesheet
@@ -160,27 +142,16 @@ class ChaserMob(BaseMob):
         )
         
     def update(self, player_pos=None):
-        self.acc = pg.Vector2(0, self.MOB_ACC)
+        self.acc = pg.Vector2(0, self.ACC)
         self.animation_timer += 2
-        
+
         if self.animation_timer % 20 == 0:
             self.frame_index = (self.frame_index + 1) % len(self.walk_frames)
             self.image = self.walk_frames[self.frame_index]
-            
-        # Apply friction and physics
-        self.acc.x += self.vel.x * self.MOB_FRICTION
-        self.vel += self.acc
-        self.pos += self.vel + self.MOB_ACC * self.acc
-        
-        # Screen wrapping
-        if self.pos.x > self.WIDTH:
-            self.pos.x = 0
-        if self.pos.x < 0:
-            self.pos.x = self.WIDTH
-            
-        self.rect.midbottom = self.pos
-        self.hitbox.topleft = (self.rect.left, self.rect.top)
-        
+
+        # Friction-based motion + screen wrap + rect/hitbox sync (shared base)
+        self.apply_physics()
+
     def chase_player(self, player_pos):
         """Chase behavior for player"""
         if player_pos.x < self.pos.x:
