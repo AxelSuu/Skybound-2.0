@@ -112,9 +112,9 @@ class Loop():
         self.level_start_time = 0               # Track level duration for achievements
         self.player_took_damage_this_level = False # Track damage for no-damage runs
         
-        # Initialize pygame and start the game
-        self.init_pygame()
-        self.startgame()
+        # Initialize pygame and start the game.
+        # (startgame() blocks in run() until the level ends, so it must be
+        # called exactly once — the previous double-call ran the game twice.)
         self.total_coins_collected = 0
         self.init_pygame()
         self.startgame()
