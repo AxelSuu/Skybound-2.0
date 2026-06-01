@@ -27,6 +27,12 @@ JUMP_BOOST_VELOCITY: int = -16 # Upward velocity while jump-boost is active
 COYOTE_FRAMES: int = 6         # Grace to still jump just after leaving a ledge
 JUMP_BUFFER_FRAMES: int = 8    # Grace to register a jump pressed just before landing
 
+# Reachability budget for procedural level generation. A base jump
+# (v=JUMP_VELOCITY, g=PLAYER_ACC) peaks at ~132px; these stay safely under that
+# so every generated platform is reachable from the one below it.
+MAX_REACH_V: int = 110         # Max jumpable vertical gap between platform tops
+MAX_REACH_H: int = 140         # Max horizontal gap reachable within a jump's airtime
+
 # --- Player gameplay -------------------------------------------------------
 START_HEALTH: int = 3          # Health the player spawns with
 MAX_HEALTH: int = 5            # Hard cap on health
