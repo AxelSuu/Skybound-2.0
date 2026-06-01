@@ -462,6 +462,8 @@ class Player(PhysicsSprite):
     def add_coins(self, amount):
         """Add coins to player"""
         self.coins += amount
+        from utils.database_logic import AddCoins
+        AddCoins(amount)
         
     def take_damage(self):
         """Take damage if not shielded and not invincible"""
