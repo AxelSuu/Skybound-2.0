@@ -195,22 +195,74 @@ class DoubleJump(BasePowerUp):
         super().collect(player)
 
 
+class CoinMagnet(BasePowerUp):
+    """Temporarily attracts nearby coins toward the player."""
+    MAGNET_RADIUS = 150
+
+    def __init__(self, x, y):
+        super().__init__(x, y)
+        self.image = pg.Surface((20, 20), pg.SRCALPHA)
+        # Draw a horseshoe magnet (red body, grey tips).
+        pg.draw.arc(self.image, (220, 30, 30), (3, 2, 14, 18), 3.14, 6.28, 5)
+        pg.draw.rect(self.image, (200, 200, 200), (3, 11, 4, 6))
+        pg.draw.rect(self.image, (200, 200, 200), (13, 11, 4, 6))
+        self.rect = self.image.get_rect()
+        self.rect.center = (x, y)
+        self.effect_duration = 360  # 6 seconds at 60 FPS
+
+    def collect(self, player):
+        player.add_magnet(self.effect_duration)
+        super().collect(player)
+
+
+class ExtraLife(BasePowerUp):
+    """Permanently raises the player's maximum health by one."""
+    def __init__(self, x, y):
+        super().__init__(x, y)
+        self.image = pg.Surface((20, 20), pg.SRCALPHA)
+        # Draw a pink heart.
+        pg.draw.circle(self.image, (255, 80, 120), (7, 8), 5)
+        pg.draw.circle(self.image, (255, 80, 120), (13, 8), 5)
+        pg.draw.polygon(self.image, (255, 80, 120), [(3, 10), (17, 10), (10, 18)])
+        self.rect = self.image.get_rect()
+        self.rect.center = (x, y)
+
+    def collect(self, player):
+        player.add_max_health()
+        super().collect(player)
+
+
 class PowerUpManager:
     """Manages power-up spawning and collection"""
     def __init__(self):
         self.power_ups = pg.sprite.Group()
         self.spawn_timer = 0
         self.spawn_interval = 120  # 2 seconds at 60 FPS
-        
-    def update(self, platforms):
-        """Update all power-ups and spawn new ones"""
+
+    def update(self, platforms, player=None):
+        """Update all power-ups, apply the coin magnet, and spawn new ones."""
         self.spawn_timer += 1
         self.power_ups.update()
-        
+        self._apply_magnet(player)
+
         # Spawn new power-ups periodically
         if self.spawn_timer >= self.spawn_interval:
             self.spawn_random_powerup(platforms)
             self.spawn_timer = 0
+
+    def _apply_magnet(self, player):
+        """While the magnet is active, pull nearby coins toward the player."""
+        if player is None or getattr(player, "magnet_timer", 0) <= 0:
+            return
+        for power_up in self.power_ups:
+            if not isinstance(power_up, Coin):
+                continue
+            to_player = pg.Vector2(player.pos) - power_up.pos
+            distance = to_player.length()
+            if 0 < distance <= CoinMagnet.MAGNET_RADIUS:
+                power_up.pos += to_player.normalize() * 4
+                power_up.original_y = power_up.pos.y  # keep bobbing around new spot
+                power_up.rect.center = power_up.pos
             
     def spawn_random_powerup(self, platforms):
         """Spawn a random power-up on a random platform"""
@@ -232,8 +284,9 @@ class PowerUpManager:
         y = platform.rect.top - 25
         
         # Choose random power-up type
-        power_up_types = [SpeedBoost, JumpBoost, HealthPotion, Coin, Shield, DoubleJump]
-        weights = [15, 15, 10, 30, 8, 12]  # Coins are most common
+        power_up_types = [SpeedBoost, JumpBoost, HealthPotion, Coin, Shield,
+                          DoubleJump, CoinMagnet, ExtraLife]
+        weights = [14, 14, 9, 28, 7, 11, 11, 3]  # Coins common; Extra Life rare
         
         power_up_class = random.choices(power_up_types, weights=weights)[0]
         

@@ -163,6 +163,7 @@ class Player(PhysicsSprite):
         self.jump_boost_timer = 0
         self.shield_timer = 0
         self.double_jump_timer = 0
+        self.magnet_timer = 0
         self.health = START_HEALTH
         self.max_health = MAX_HEALTH
         self.coins = 0
@@ -416,7 +417,10 @@ class Player(PhysicsSprite):
             self.double_jump_timer -= 1
             if self.double_jump_timer == 0:
                 self.has_double_jump = False
-                
+
+        if self.magnet_timer > 0:
+            self.magnet_timer -= 1
+
         # Update invincibility timer
         if self.invincible_timer > 0:
             self.invincible_timer -= 1
@@ -442,6 +446,15 @@ class Player(PhysicsSprite):
     def add_health(self):
         """Add health/extra life"""
         self.health = min(self.health + 1, self.max_health)
+
+    def add_max_health(self):
+        """Permanently raise the max health by one and heal into it (Extra Life)."""
+        self.max_health += 1
+        self.health += 1
+
+    def add_magnet(self, duration):
+        """Activate the coin magnet for a number of frames."""
+        self.magnet_timer = max(self.magnet_timer, duration)
         
     def add_coins(self, amount):
         """Add coins to player"""
@@ -470,6 +483,8 @@ class Player(PhysicsSprite):
             effects.append(("Shield", self.shield_timer))
         if self.double_jump_timer > 0:
             effects.append(("Double Jump", self.double_jump_timer))
+        if self.magnet_timer > 0:
+            effects.append(("Magnet", self.magnet_timer))
         return effects
     
     def is_invincible(self):
