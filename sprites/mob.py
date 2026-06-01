@@ -1,21 +1,19 @@
 import pygame as pg
 import os
 from utils.spritesheet import Spritesheet
+from sprites.base import PhysicsSprite
+from constants import MOB_ACC, MOB_FRICTION
 
-""" Class for mob sprite, using pg.sprite.Sprite
-    Very based on player sprite"""
+""" Class for mob sprite. Shares vector physics with the player via
+    PhysicsSprite (friction-based motion + screen wrap)."""
 
 
-class Mob(pg.sprite.Sprite):
+class Mob(PhysicsSprite):
     def __init__(self):
-        pg.sprite.Sprite.__init__(self)
+        super().__init__(acc=MOB_ACC, friction=MOB_FRICTION)
         self.img_folder_path = os.path.abspath(
             os.path.join(os.path.dirname(__file__), "..", "imgs")
         )
-        self.HEIGHT = 600
-        self.WIDTH = 480
-        self.MOB_ACC = 0.5
-        self.MOB_FRICTION = -0.12
 
         # Load the spritesheet
         self.spritesheet = Spritesheet("Mobsheet.png")
@@ -34,17 +32,14 @@ class Mob(pg.sprite.Sprite):
 
         self.rect = self.image.get_rect()
         self.rect.center = (440, self.HEIGHT * 3 / 4 + 10)
-        self.pos = pg.Vector2(self.rect.center)
-        self.vel = pg.Vector2(0, 0)
-        self.acc = pg.Vector2(0, 0)
-        self.on_floor = False
+        self.seed_body(self.rect.center)
 
         self.hitbox = pg.Rect(
             self.rect.left, self.rect.top, self.rect.width, self.rect.height
         )
 
     def update(self, player_pos=None):
-        self.acc = pg.Vector2(0, self.MOB_ACC)
+        self.acc = pg.Vector2(0, self.ACC)
 
         self.animation_timer += 2
 
@@ -52,18 +47,5 @@ class Mob(pg.sprite.Sprite):
             self.frame_index = (self.frame_index + 1) % len(self.walk_frames)
             self.image = self.walk_frames[self.frame_index]
 
-        # apply friction
-        self.acc.x += self.vel.x * self.MOB_FRICTION
-        # equations of motion
-        self.vel += self.acc
-        self.pos += self.vel + self.MOB_ACC * self.acc
-        # wrap around the sides of the screen
-        if self.pos.x > self.WIDTH:
-            self.pos.x = 0
-        if self.pos.x < 0:
-            self.pos.x = self.WIDTH
-
-        self.rect.midbottom = self.pos
-
-        # Update hitbox position
-        self.hitbox.topleft = (self.rect.left, self.rect.top)
+        # Friction-based motion + screen wrap + rect/hitbox sync (shared base)
+        self.apply_physics()

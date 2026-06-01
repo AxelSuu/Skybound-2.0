@@ -104,14 +104,31 @@ class Main_Loop:
         
         # Set global volume level
         pg.mixer.music.set_volume(0.4)
-        
+
+        # Restore persisted audio preferences (volumes / mute toggles).
+        from utils.settings_store import load_and_apply
+        load_and_apply()
+
         # Initialize game state to main menu
         SetGamestate("MAIN_MENU")
         
         # Initialize window management
         self.current_window = None
         self.running1 = True
-        
+
+        # Scene dispatch table: state -> (window class, factory, music channel).
+        # Adding a screen is now a single entry instead of an if/elif branch.
+        # PAUSED is intentionally absent: it is never set as a game state —
+        # pausing is handled inside the gameplay Loop itself.
+        self._scenes = {
+            "MAIN_MENU": (Main_menu, lambda: Main_menu(), self.channel1),
+            "START_SCREEN": (Start, lambda: Start(), self.channel1),
+            "GAME": (Loop, lambda: Loop(self), self.channel3),
+            "GAME_OVER": (Gameover, lambda: Gameover(), self.channel1),
+            "NEW_HIGHSCORE": (NewHighscore, lambda: NewHighscore(), self.channel4),
+        }
+
+
         # Pre-load and pause all music tracks (they'll be unpaused as needed)
         self.channel1.play(pg.mixer.Sound(self.menusound), loops=-1)
         self.channel1.pause()
@@ -138,86 +155,33 @@ class Main_Loop:
         Music management is also handled here - each state has its own
         background music track that is automatically managed.
         """
-        while self.running1 == True:
-            # Get current game state from the database system
+        while self.running1:
+            # Get current game state (held in memory by the save system)
             current_state = GetGamestate()
 
-            # MAIN_MENU STATE: Show main menu with game options
-            if current_state == "MAIN_MENU":
-                if not isinstance(self.current_window, Main_menu):
-                    # Unpause menu music if not already paused globally
-                    if not self.pause_music:
-                        self.channel1.unpause()
-                    self.current_window = Main_menu()
-                    self.channel1.pause()
-
-            # START_SCREEN STATE: Character selection screen
-            elif current_state == "START_SCREEN":
-                if not isinstance(self.current_window, Start):
-                    if not self.pause_music:
-                        self.channel1.unpause()
-                    self.current_window = Start()
-                    self.channel1.pause()
-
-            # GAME STATE: Active gameplay loop
-            elif current_state == "GAME":
-                if not isinstance(self.current_window, Loop):
-                    # Switch to gameplay music
-                    if not self.pause_music:
-                        self.channel3.unpause()
-                    self.current_window = Loop(self)
-                    self.channel3.pause()
-
-            # PAUSED STATE: Game is paused (accessible during gameplay)
-            elif current_state == "PAUSED":
-                if not isinstance(self.current_window, Pause):
-                    # Keep menu music during pause
-                    if not self.pause_music:
-                        self.channel1.unpause()
-                    self.current_window = Pause(self)
-                    self.channel1.pause()
-
-            # GAME_OVER STATE: Level completed or player died
-            elif current_state == "GAME_OVER":
-                if not isinstance(self.current_window, Gameover):
-                    # Return to menu music
-                    if not self.pause_music:
-                        self.channel1.unpause()
-                    self.current_window = Gameover()
-                    self.channel1.pause()
-
-            # NEW_HIGHSCORE STATE: Special celebration screen for new records
-            elif current_state == "NEW_HIGHSCORE":
-                if not isinstance(self.current_window, NewHighscore):
-                    # Play special celebration music
-                    if not self.pause_music:
-                        self.channel4.unpause()
-                    self.current_window = NewHighscore()
-                    self.channel4.pause()
-
-            # EXIT STATE: Terminate the game
-            elif current_state == "EXIT":
+            # EXIT: terminate the game
+            if current_state == "EXIT":
                 self.running1 = False
                 pg.mixer.music.stop()
                 pg.quit()
+                break
 
-    def pause_music_func(self):
-        """
-        Pause all background music channels.
-        
-        This method was intended for global music pausing functionality
-        but is currently not fully implemented in the game. It's preserved
-        for future use or debugging purposes.
-        
-        When called, it:
-        1. Sets the pause_music flag to True
-        2. Pauses all four audio channels
-        """
-        self.pausemusic = True
-        self.channel1.pause()
-        self.channel2.pause()
-        self.channel3.pause()
-        self.channel4.pause()
+            # Look up the scene for this state. Unknown states are ignored.
+            scene = self._scenes.get(current_state)
+            if scene is None:
+                continue
+            window_cls, build_window, channel = scene
+
+            # Each scene window blocks in its own loop until it changes the
+            # game state, so we only (re)build it when the state's scene differs
+            # from the one currently shown.
+            if not isinstance(self.current_window, window_cls):
+                # Unpause this scene's music (unless globally muted), run the
+                # blocking scene, then pause its music when it returns.
+                if not self.pause_music:
+                    channel.unpause()
+                self.current_window = build_window()
+                channel.pause()
 
 
 if __name__ == "__main__":

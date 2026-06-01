@@ -27,13 +27,11 @@ from utils.sound_effects import *
 from utils.achievements import check_level_achievement, check_coin_achievement, check_no_damage_achievement
 from sprites.powerups import PowerUpManager
 from windows.paus import Pause
+from utils import daily
 
-# Game Configuration Constants
-WIDTH : int = 480              # Screen width in pixels
-HEIGHT : int = 600             # Screen height in pixels  
-FPS : int = 100                # Target frames per second (high for smooth gameplay)
-TITLE : str = "Skybound"       # Window title
-WHITE : tuple = (255, 255, 255) # RGB color tuple for white
+# Game configuration constants (see constants.py for the shared source of truth)
+from constants import WIDTH, HEIGHT, FPS, TITLE, WHITE
+
 IMG_FOLDER_PATH : str = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "imgs"))
 
 class Loop():
@@ -112,9 +110,9 @@ class Loop():
         self.level_start_time = 0               # Track level duration for achievements
         self.player_took_damage_this_level = False # Track damage for no-damage runs
         
-        # Initialize pygame and start the game
-        self.init_pygame()
-        self.startgame()
+        # Initialize pygame and start the game.
+        # (startgame() blocks in run() until the level ends, so it must be
+        # called exactly once — the previous double-call ran the game twice.)
         self.total_coins_collected = 0
         self.init_pygame()
         self.startgame()
@@ -163,9 +161,14 @@ class Loop():
                 SetGamestate("EXIT")
 
     def update(self):
-        self.all_sprites.update()
-        self.powerup_manager.update(self.platforms)
+        # Effects always animate (incl. shake during a freeze). If a hit-stop
+        # is active, skip the gameplay simulation this frame for impact.
         self.effects_manager.update()
+        if self.effects_manager.is_hit_stopped():
+            return
+
+        self.all_sprites.update()
+        self.powerup_manager.update(self.platforms, self.player)
         self.handle_collisions()
         
         # Update mob AI with player position
@@ -178,9 +181,10 @@ class Loop():
         # Check for landing effects
         if not self.player_was_on_floor and self.player.on_floor:
             self.effects_manager.create_landing_dust(
-                self.player.pos.x, self.player.pos.y, 
+                self.player.pos.x, self.player.pos.y,
                 self.player.vel.x * 0.5
             )
+            self.player.land()  # squash on touchdown
             play_land_sound()
             
         self.player_was_on_floor = self.player.on_floor
@@ -232,6 +236,8 @@ class Loop():
                     )
             
             SetHighScore(GetScore())
+            if daily.is_active():
+                daily.record_daily_result(level_completed)
             SetScore(GetScore() + 1)
             self.running = False
             play_victory_sound()
@@ -249,11 +255,12 @@ class Loop():
             if self.player.take_damage():
                 self.player_took_damage_this_level = True
                 play_damage_sound()
+                self.effects_manager.start_hit_stop(6)  # freeze-frame on the hit
                 self.effects_manager.create_explosion(
                     self.player.pos.x, self.player.pos.y, (255, 0, 0)
                 )
                 self.effects_manager.add_floating_text(
-                    self.player.pos.x, self.player.pos.y - 20, 
+                    self.player.pos.x, self.player.pos.y - 20,
                     "OUCH!", (255, 0, 0)
                 )
                 
@@ -276,6 +283,7 @@ class Loop():
                 # Add floating text based on power-up type
                 if hasattr(powerup, 'value'):  # Coin
                     self.total_coins_collected += powerup.value
+                    AddCoins(powerup.value)  # persist to the spendable coin balance
                     coin_achievements = check_coin_achievement(self.total_coins_collected)
                     for achievement in coin_achievements:
                         if achievement:
@@ -304,6 +312,7 @@ class Loop():
                     if self.player.take_damage():
                         self.player_took_damage_this_level = True
                         play_damage_sound()
+                        self.effects_manager.start_hit_stop(6)  # freeze-frame on the hit
                         self.effects_manager.create_explosion(
                             self.player.pos.x, self.player.pos.y, (255, 100, 0)
                         )
@@ -343,18 +352,26 @@ class Loop():
             bg2_y = 0 + shake_offset[1]
             self.screen.blit(self.background2, (bg2_x, bg2_y))
             
-        # Draw sprites with shake offset
+        # Draw sprites with shake offset. Anchor each image by its midbottom so
+        # the player's squash/stretch (which scales image but not rect) stays
+        # planted; for every other sprite image size == rect size, so this is
+        # identical to a topleft blit. The whole batch is drawn in one
+        # pygame-ce fblits() call rather than N Python-level blit() calls.
+        sprite_blits = []
         for sprite in self.all_sprites:
             sprite_rect = sprite.rect.copy()
             sprite_rect.x += shake_offset[0]
             sprite_rect.y += shake_offset[1]
-            
+
             # Handle player invincibility flashing
             if sprite == self.player and self.player.should_flash():
                 # Skip drawing the player when flashing
                 continue
-            
-            self.screen.blit(sprite.image, sprite_rect)
+
+            blit_rect = sprite.image.get_rect(midbottom=sprite_rect.midbottom)
+            sprite_blits.append((sprite.image, blit_rect))
+
+        self.screen.fblits(sprite_blits)
             
         # Draw power-ups
         self.powerup_manager.draw(self.screen)

@@ -35,19 +35,20 @@ Setup Instructions
    cd Skybound
    ```
 
-2. Install the required dependencies:
+2. Install [uv](https://docs.astral.sh/uv/) if you don't have it, then sync the dependencies:
    ```
-   pip install -r requirements.txt
+   uv sync
    ```
+   This creates a virtual environment and installs the exact pinned versions from `uv.lock`.
 
 3. Run in code
    ```
-   python3 main.py
+   uv run python main.py
    ```
 
-3. Alternative, Build the exe file
+4. Alternative, Build the exe file (installs the optional build tools):
    ```
-   pyinstaller skybound.spec
+   uv run --group build pyinstaller skybound.spec
    ```
 
 I took the background images from here

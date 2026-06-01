@@ -31,10 +31,13 @@ from utils.database_logic import (
     SetGamestate,
     SetHat,
     SetChar,
+    SetScore,
+    SetLevel,
     manualSetHighScore,
     SelectedChar,
     Hat,
 )
+from utils.daily import set_active as set_daily_active, get_daily_best
 
 
 class Main_menu:
@@ -102,7 +105,7 @@ class Main_menu:
         icon = pg.image.load(os.path.join(self.img_folder_path, "icon.png"))
         self.bg_scroll = 0
         self.background = pg.image.load(
-            os.path.join(self.img_folder_path, "Sky2.png")
+            os.path.join(self.img_folder_path, "sky2.png")
         ).convert()
         self.background2 = pg.transform.flip(self.background, True, False).convert()
         pg.display.set_icon(icon)
@@ -204,140 +207,6 @@ class Main_menu:
 
             pg.display.flip()
 
-    def show_shop(self):
-        # Create shop screen, ability to buy a hat, talks with txt files
-        shop_screen = True
-        hat_image = pg.image.load(
-            os.path.join(self.img_folder_path, "hat1.png")
-        ).convert_alpha()
-        self.hat_status = 0
-        pressed = False
-        while shop_screen:
-            self.screen.fill(self.LIGHTBLUE)
-            self.screen.blit(hat_image, (self.WIDTH / 2 - 100, self.HEIGHT / 2))
-            draw_text(self.screen, "Shop", 50, self.WIDTH / 2, self.HEIGHT / 4 - 70)
-            draw_text(
-                self.screen, "Hat costs 20", 22, self.WIDTH / 2, self.HEIGHT / 4 + 20
-            )
-            draw_text(
-                self.screen,
-                f"Coins: {GetHighScore()}",
-                22,
-                self.WIDTH / 2,
-                self.HEIGHT / 2 - 50,
-            )
-            draw_text(
-                self.screen,
-                "Press ESC to return",
-                22,
-                self.WIDTH / 2,
-                self.HEIGHT * 0.8,
-            )
-            if self.hat_status == 0:
-                draw_text(
-                    self.screen, "Buy hat", 22, self.WIDTH / 2, self.HEIGHT / 2 - 10
-                )
-            for event in pg.event.get():
-                if event.type == pg.QUIT:
-                    shop_screen = False
-                if event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
-                    shop_screen = False
-                if event.type == pg.MOUSEBUTTONDOWN and not pressed:
-                    mouse_pos = pg.mouse.get_pos()
-                    if self.buy_button.collidepoint(mouse_pos):
-                        pressed = True
-                        self.buy()
-
-                if event.type == pg.MOUSEBUTTONUP:
-                    pressed = False
-
-            self.buy_button = pg.Rect(
-                self.WIDTH / 2 - 50, self.HEIGHT / 2 - 10, 100, 30
-            )
-            if not pressed:
-                pg.draw.rect(self.screen, self.BLACK, self.buy_button, 2)
-                if self.hat_status == 1:
-                    draw_text(
-                        self.screen,
-                        f"You bought a red hat!",
-                        22,
-                        self.WIDTH / 2,
-                        self.HEIGHT / 2 + 50,
-                    )
-                    draw_text(
-                        self.screen, "Buy hat", 22, self.WIDTH / 2, self.HEIGHT / 2 - 10
-                    )
-                if self.hat_status == 2:
-                    draw_text(
-                        self.screen,
-                        f"You don't have enough coins!",
-                        22,
-                        self.WIDTH / 2,
-                        self.HEIGHT / 2 + 50,
-                    )
-                    draw_text(
-                        self.screen, "Buy hat", 22, self.WIDTH / 2, self.HEIGHT / 2 - 10
-                    )
-                if self.hat_status == 3:
-                    draw_text(
-                        self.screen,
-                        f"You bought a red hat!",
-                        22,
-                        self.WIDTH / 2,
-                        self.HEIGHT / 2 + 50,
-                    )
-                    draw_text(
-                        self.screen, "Buy hat", 22, self.WIDTH / 2, self.HEIGHT / 2 - 10
-                    )
-            if pressed:
-                pg.draw.rect(self.screen, self.BLUE, self.buy_button)
-                if self.hat_status == 1:
-                    draw_text(
-                        self.screen,
-                        f"You bought a red hat!",
-                        22,
-                        self.WIDTH / 2,
-                        self.HEIGHT / 2 + 50,
-                    )
-                    draw_text(
-                        self.screen, "Buy hat", 22, self.WIDTH / 2, self.HEIGHT / 2 - 10
-                    )
-                if self.hat_status == 2:
-                    draw_text(
-                        self.screen,
-                        f"You don't have enough coins!",
-                        22,
-                        self.WIDTH / 2,
-                        self.HEIGHT / 2 + 50,
-                    )
-                    draw_text(
-                        self.screen, "Buy hat", 22, self.WIDTH / 2, self.HEIGHT / 2 - 10
-                    )
-                if self.hat_status == 3:
-                    draw_text(
-                        self.screen,
-                        f"You bought a red hat!",
-                        22,
-                        self.WIDTH / 2,
-                        self.HEIGHT / 2 + 50,
-                    )
-                    draw_text(
-                        self.screen, "Buy hat", 22, self.WIDTH / 2, self.HEIGHT / 2 - 10
-                    )
-
-            pg.display.flip()
-
-    def buy(self):
-        # Logic for buying a hat
-        if GetHighScore() >= 20 and Hat() != "hat":
-            manualSetHighScore(max(GetHighScore() - 20, 0))
-            self.hat_status = 1
-            SetHat("hat")
-        elif Hat() == "hat":
-            self.hat_status = 3
-        elif GetHighScore() < 20:
-            self.hat_status = 2
-
     def show_character_selection(self):
         # Create character selection screen, talks with txt files
 
@@ -418,6 +287,12 @@ class Main_menu:
                         SetChar("0")
 
             pg.display.flip()
+
+    def show_shop(self):
+        """Show the upgrade shop (spend coins on permanent upgrades + cosmetics)."""
+        from windows.shop import Shop
+
+        Shop()
 
     def show_settings(self):
         """Show settings screen"""

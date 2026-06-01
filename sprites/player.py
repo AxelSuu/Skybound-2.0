@@ -22,9 +22,22 @@ import os
 from utils.spritesheet import Spritesheet
 from utils.database_logic import Hat
 from utils.player_stats import player_stats
+from utils.upgrades import apply_upgrades
+from sprites.base import PhysicsSprite
+from constants import (
+    PLAYER_ACC,
+    FRICTION,
+    JUMP_VELOCITY,
+    JUMP_BOOST_VELOCITY,
+    START_HEALTH,
+    MAX_HEALTH,
+    INVINCIBILITY_FRAMES,
+    COYOTE_FRAMES,
+    JUMP_BUFFER_FRAMES,
+)
 
 
-class Player(pg.sprite.Sprite):
+class Player(PhysicsSprite):
     """
     Player character class with comprehensive movement, animation, and power-up systems.
     
@@ -83,9 +96,10 @@ class Player(pg.sprite.Sprite):
         but statistics like coins and certain upgrades may be restored
         from previous gameplay sessions.
         """
-        # Initialize pygame sprite base class
-        pg.sprite.Sprite.__init__(self)
-        
+        # Initialize the shared physics base (sets pos/vel/acc, ACC, FRICTION,
+        # WIDTH, HEIGHT, on_floor).
+        super().__init__(acc=PLAYER_ACC, friction=FRICTION)
+
         # Set up file paths for game assets
         self.img_folder_path = os.path.abspath(
             os.path.join(os.path.dirname(__file__), "..", "imgs")
@@ -112,18 +126,14 @@ class Player(pg.sprite.Sprite):
         self.playerleft = True            # Player facing direction (True = left)
         self.state = "idle"              # Current animation state
         
-        # Movement and physics state
-        self.on_floor = False            # Ground contact detection
-        self.jump_pressed = False        # Jump input state (prevents double-jumping)
-        
-        # Screen dimensions for boundary checking
-        self.WIDTH = 480
-        self.HEIGHT = 600
-        
-        # Physics constants
-        self.PLAYER_ACC = 0.5            # Player acceleration rate
-        self.PLAYER_FRICTION = -0.12     # Friction/deceleration rate
-        
+        # Movement and physics state (pos/vel/acc, WIDTH, HEIGHT, ACC, FRICTION
+        # are provided by PhysicsSprite).
+        self.jump_pressed = False        # Jump key state last frame (edge detection)
+        self.coyote_timer = 0            # Frames of grace to jump after leaving ground
+        self.jump_buffer_timer = 0       # Frames a pending jump press stays buffered
+        # Squash & stretch (purely visual): >0 squashes (land), <0 stretches (jump).
+        self.squash = 0.0
+
         # Load animation spritesheet
         self.spritesheet = Spritesheet("Playersheet.png")
         
@@ -139,9 +149,7 @@ class Player(pg.sprite.Sprite):
             self.image.get_rect()
         )  # Set the rect attribute for collision detection
         self.rect.center = (30, self.HEIGHT * 3 / 4)  # Create center rect object
-        self.pos = pg.Vector2(self.rect.center)  # Set the position vector for movement
-        self.vel = pg.Vector2(0, 0)  # Set the velocity vector for movement
-        self.acc = pg.Vector2(0, 0)  # Set the acceleration vector for movement
+        self.seed_body(self.rect.center)  # Anchor pos/vel/acc at the spawn point
 
         # Create hitbox for collision detection
         self.hitbox = pg.Rect(
@@ -156,25 +164,28 @@ class Player(pg.sprite.Sprite):
         self.jump_boost_timer = 0
         self.shield_timer = 0
         self.double_jump_timer = 0
-        self.health = 3
-        self.max_health = 5
+        self.magnet_timer = 0
+        self.health = START_HEALTH
+        self.max_health = MAX_HEALTH
         self.coins = 0
         self.has_double_jump = False
         self.double_jump_used = False
         self.shield_active = False
         self.power_up_effects = []
-        
-        # Load persistent stats
+        self.run_accel_mult = 1.0  # boosted by the move-speed shop upgrade
+
+        # Load persistent stats, then layer permanent shop upgrades on top.
         player_stats.apply_stats_to_player(self)
+        apply_upgrades(self)
         
         # Invincibility frames
         self.invincible_timer = 0
-        self.invincible_duration = 120  # 2 seconds at 60 FPS (120 frames)
+        self.invincible_duration = INVINCIBILITY_FRAMES  # ~2 seconds at 60 FPS
 
     def update(self):
         """Update the player's position, state, and animations."""
 
-        self.acc = pg.Vector2(0, self.PLAYER_ACC)
+        self.acc = pg.Vector2(0, self.ACC)
         self.animation_timer += 1
         
         # Update power-up timers
@@ -185,9 +196,9 @@ class Player(pg.sprite.Sprite):
         if not keys[pg.K_LEFT] and not keys[pg.K_RIGHT] and self.on_floor:
             self.state = "idle"
 
-        # Apply speed boost if active
+        # Apply speed boost (temporary power-up) and the permanent move-speed upgrade
         speed_multiplier = 1.5 if self.speed_boost_timer > 0 else 1.0
-        base_acc = self.PLAYER_ACC * speed_multiplier
+        base_acc = self.ACC * speed_multiplier * self.run_accel_mult
 
         if keys[pg.K_LEFT]:
             self.acc.x = -base_acc
@@ -199,29 +210,8 @@ class Player(pg.sprite.Sprite):
             self.state = "moving"
             self.playerleft = False
 
-        # Enhanced jumping with double jump support
-        if keys[pg.K_SPACE] and not self.jump_pressed:
-            if self.on_floor and self.vel.y == 0:
-                # Regular jump
-                jump_strength = -12
-                if self.jump_boost_timer > 0:
-                    jump_strength = -16  # Enhanced jump
-                self.vel.y = jump_strength
-                self.on_floor = False
-                self.jump_pressed = True
-                self.double_jump_used = False
-            elif (self.has_double_jump and not self.double_jump_used and 
-                  not self.on_floor and self.vel.y > -8):
-                # Double jump
-                jump_strength = -12
-                if self.jump_boost_timer > 0:
-                    jump_strength = -16
-                self.vel.y = jump_strength
-                self.double_jump_used = True
-                self.jump_pressed = True
-
-        if not keys[pg.K_SPACE]:
-            self.jump_pressed = False
+        # Jumping with coyote time, jump buffering and double-jump support
+        self._update_jump(keys[pg.K_SPACE])
 
         if self.vel.y < 0:
             self.state = "jumping"
@@ -230,64 +220,108 @@ class Player(pg.sprite.Sprite):
             self.state = "falling"
 
         self.animate()
+        self._apply_squash()
 
-        # apply friction
-        self.acc.x += self.vel.x * self.PLAYER_FRICTION
-        # equations of motion
-        self.vel += self.acc
-        self.pos += self.vel + self.PLAYER_ACC * self.acc
-        # wrap around the sides of the screen
-        if self.pos.x > self.WIDTH:
-            self.pos.x = 0
-        if self.pos.x < 0:
-            self.pos.x = self.WIDTH
+        # Friction-based motion + screen wrap + rect/hitbox sync (shared base).
+        # The hitbox is inset (+10, +7) from the sprite rect.
+        self.apply_physics(hitbox_dx=10, hitbox_dy=7)
 
-        self.rect.midbottom = self.pos
+    def land(self):
+        """Trigger the landing squash (called by the loop on ground contact)."""
+        self.squash = 1.0
 
-        # Update hitbox position
-        self.hitbox.topleft = (self.rect.left + 10, self.rect.top + 7)
+    def _apply_squash(self):
+        """Apply and decay the squash/stretch deformation to the current frame.
+
+        Purely visual: ``self.rect`` (the collision shape) is left untouched, so
+        the scaled image is anchored by its midbottom at draw time to keep the
+        feet planted. Uses pygame-ce ``transform.scale_by``.
+        """
+        if abs(self.squash) < 0.02:
+            self.squash = 0.0
+            return
+        k = 0.3  # max deformation = 30%
+        scale_x = 1.0 + k * self.squash
+        scale_y = 1.0 - k * self.squash
+        self.image = pg.transform.scale_by(self.image, (scale_x, scale_y))
+        self.squash *= 0.75  # ease back to neutral
+
+    def _update_jump(self, space_held):
+        """Resolve jumping with coyote time and jump buffering.
+
+        Args:
+            space_held (bool): whether the jump key is down this frame.
+
+        Coyote time lets the player jump for a few frames after walking off a
+        ledge; jump buffering remembers a press made just before landing so it
+        fires the instant the ground is touched. Both are classic platformer
+        "game feel" affordances. Double-jump (a power-up) is unchanged.
+        """
+        # Refresh the coyote window while genuinely resting on the ground.
+        if self.on_floor and self.vel.y == 0:
+            self.coyote_timer = COYOTE_FRAMES
+        elif self.coyote_timer > 0:
+            self.coyote_timer -= 1
+
+        # Buffer the jump press on the key-down edge, then let it decay.
+        space_pressed_edge = space_held and not self.jump_pressed
+        if space_pressed_edge:
+            self.jump_buffer_timer = JUMP_BUFFER_FRAMES
+        elif self.jump_buffer_timer > 0:
+            self.jump_buffer_timer -= 1
+
+        jump_strength = JUMP_BOOST_VELOCITY if self.jump_boost_timer > 0 else JUMP_VELOCITY
+
+        if self.jump_buffer_timer > 0 and self.coyote_timer > 0:
+            # Ground (or coyote-grace) jump.
+            self.vel.y = jump_strength
+            self.on_floor = False
+            self.coyote_timer = 0
+            self.jump_buffer_timer = 0
+            self.double_jump_used = False
+            self.squash = -1.0  # stretch on take-off
+        elif (
+            space_pressed_edge
+            and self.has_double_jump
+            and not self.double_jump_used
+            and not self.on_floor
+            and self.vel.y > -8
+        ):
+            # Mid-air double jump (power-up). Requires a fresh press.
+            self.vel.y = jump_strength
+            self.double_jump_used = True
+
+        # Remember the key state for next-frame edge detection.
+        self.jump_pressed = space_held
 
     def animate(self):
-        """Handle player animations based on the current state."""
+        """Handle player animations based on the current state.
 
-        if self.state == "idle":
-            if self.animation_timer % 20 == 0:
-                if self.playerleft:
-                    self.frame_index = (self.frame_index + 1) % len(
-                        self.idle_left_frames
-                    )
-                    self.image = self.idle_left_frames[self.frame_index]
-                    self.animation_timer = 0
-                else:
-                    self.frame_index = (self.frame_index + 1) % len(
-                        self.idle_right_frames
-                    )
-                    self.image = self.idle_right_frames[self.frame_index]
-                    self.animation_timer = 0
+        Always reassigns ``self.image`` to a clean (unscaled) frame so that the
+        squash/stretch pass downstream never compounds on an already-deformed
+        surface. Frame advancement is still gated per state.
+        """
+        # Pick the active frame list for the current state and facing, plus how
+        # often to advance the frame (None = single-frame poses).
+        if self.state == "moving":
+            frames = self.walk_left_frames if self.playerleft else self.walk_right_frames
+            gate = 6
+        elif self.state == "jumping":
+            frames = self.jumping_left_frames if self.playerleft else self.jumping_right_frames
+            gate = None
+        elif self.state == "falling":
+            frames = self.falling_left_frames if self.playerleft else self.falling_right_frames
+            gate = None
+        else:  # idle (and any fallback)
+            frames = self.idle_left_frames if self.playerleft else self.idle_right_frames
+            gate = 20
 
-        if self.state == "moving" and not self.playerleft:
-            if self.animation_timer % 6 == 0:  # Change frame every 0.1 seconds
-                self.frame_index = (self.frame_index + 1) % len(self.walk_right_frames)
-                self.image = self.walk_right_frames[self.frame_index]
-                self.animation_timer = 0
+        if gate is not None and self.animation_timer % gate == 0:
+            self.frame_index = (self.frame_index + 1) % len(frames)
+            self.animation_timer = 0
 
-        if self.state == "moving" and self.playerleft:
-            if self.animation_timer % 6 == 0:  # Change frame every 0.1 seconds
-                self.frame_index = (self.frame_index + 1) % len(self.walk_left_frames)
-                self.image = self.walk_left_frames[self.frame_index]
-                self.animation_timer = 0
-
-        if self.state == "jumping":
-            if self.playerleft:
-                self.image = self.jumping_left_frames[0]
-            else:
-                self.image = self.jumping_right_frames[0]
-
-        if self.state == "falling":
-            if self.playerleft:
-                self.image = self.falling_left_frames[0]
-            else:
-                self.image = self.falling_right_frames[0]
+        # Clamp the shared frame index in case we just switched frame lists.
+        self.image = frames[self.frame_index % len(frames)]
 
     def load_character(self):
         """Load the character frames for the player without a hat."""
@@ -386,7 +420,10 @@ class Player(pg.sprite.Sprite):
             self.double_jump_timer -= 1
             if self.double_jump_timer == 0:
                 self.has_double_jump = False
-                
+
+        if self.magnet_timer > 0:
+            self.magnet_timer -= 1
+
         # Update invincibility timer
         if self.invincible_timer > 0:
             self.invincible_timer -= 1
@@ -412,6 +449,15 @@ class Player(pg.sprite.Sprite):
     def add_health(self):
         """Add health/extra life"""
         self.health = min(self.health + 1, self.max_health)
+
+    def add_max_health(self):
+        """Permanently raise the max health by one and heal into it (Extra Life)."""
+        self.max_health += 1
+        self.health += 1
+
+    def add_magnet(self, duration):
+        """Activate the coin magnet for a number of frames."""
+        self.magnet_timer = max(self.magnet_timer, duration)
         
     def add_coins(self, amount):
         """Add coins to player"""
@@ -440,6 +486,8 @@ class Player(pg.sprite.Sprite):
             effects.append(("Shield", self.shield_timer))
         if self.double_jump_timer > 0:
             effects.append(("Double Jump", self.double_jump_timer))
+        if self.magnet_timer > 0:
+            effects.append(("Magnet", self.magnet_timer))
         return effects
     
     def is_invincible(self):
