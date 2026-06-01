@@ -50,8 +50,9 @@ class PhysicsSprite(pg.sprite.Sprite):
 
     def apply_gravity(self, hitbox_dx=0, hitbox_dy=0):
         """Simple gravity integration (no friction) + wrap + rect/hitbox sync."""
-        self.acc = pg.Vector2(0, self.ACC)
-        self.vel += self.acc
+        if not self.on_floor:
+            self.acc = pg.Vector2(0, self.ACC)
+            self.vel += self.acc
         self.pos += self.vel
         self._wrap_and_sync(hitbox_dx, hitbox_dy)
 
