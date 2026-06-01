@@ -21,9 +21,9 @@ Date: July 2025
 """
 
 import pygame as pg
-import os
 from utils.draw_text import draw_text
 from utils.sound_effects import sound_manager
+from utils.settings_store import save_settings
 
 
 class Settings:
@@ -199,49 +199,15 @@ class Settings:
                             sound_manager.set_music_volume(self.music_volume)
             
             pg.display.flip()
-            
+
+        # Persist preferences when leaving the screen.
+        self.save_settings()
+
     def save_settings(self):
-        """Save settings to file"""
-        settings_data = {
-            'sfx_volume': self.sfx_volume,
-            'music_volume': self.music_volume,
-            'sfx_enabled': self.sfx_enabled,
-            'music_enabled': self.music_enabled
-        }
-        
-        # Save to text file (simple format)
-        txt_folder_path = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "..", "txts")
-        )
-        
-        try:
-            with open(os.path.join(txt_folder_path, "settings.txt"), "w") as f:
-                f.write(f"sfx_volume={self.sfx_volume}\n")
-                f.write(f"music_volume={self.music_volume}\n")
-                f.write(f"sfx_enabled={self.sfx_enabled}\n")
-                f.write(f"music_enabled={self.music_enabled}\n")
-        except:
-            pass  # Ignore if can't save
-            
-    def load_settings(self):
-        """Load settings from file"""
-        txt_folder_path = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "..", "txts")
-        )
-        
-        try:
-            with open(os.path.join(txt_folder_path, "settings.txt"), "r") as f:
-                lines = f.readlines()
-                for line in lines:
-                    if '=' in line:
-                        key, value = line.strip().split('=')
-                        if key == 'sfx_volume':
-                            self.sfx_volume = float(value)
-                        elif key == 'music_volume':
-                            self.music_volume = float(value)
-                        elif key == 'sfx_enabled':
-                            self.sfx_enabled = value.lower() == 'true'
-                        elif key == 'music_enabled':
-                            self.music_enabled = value.lower() == 'true'
-        except:
-            pass  # Use defaults if can't load
+        """Persist current settings to the save file."""
+        save_settings({
+            "sfx_volume": self.sfx_volume,
+            "music_volume": self.music_volume,
+            "sfx_enabled": self.sfx_enabled,
+            "music_enabled": self.music_enabled,
+        })

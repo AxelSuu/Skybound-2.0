@@ -104,7 +104,11 @@ class Main_Loop:
         
         # Set global volume level
         pg.mixer.music.set_volume(0.4)
-        
+
+        # Restore persisted audio preferences (volumes / mute toggles).
+        from utils.settings_store import load_and_apply
+        load_and_apply()
+
         # Initialize game state to main menu
         SetGamestate("MAIN_MENU")
         
