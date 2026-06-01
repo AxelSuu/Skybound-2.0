@@ -167,7 +167,7 @@ class Loop():
         if self.effects_manager.is_hit_stopped():
             return
 
-        self.all_sprites.update()
+        self.player.update()
         self.powerup_manager.update(self.platforms, self.player)
         self.handle_collisions()
         
